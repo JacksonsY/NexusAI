@@ -2,8 +2,13 @@ import { request } from '../request';
 
 // ===== 独立密钥（standalone Access Key·控制台签发·/admin/access-keys·一比一 Aether AccessKeys） =====
 
-/** 独立密钥分页列表（仅 standalone=1） */
-export function fetchAccessKeys(params: { pageNum?: number; pageSize?: number; projectCode?: string }) {
+/** 独立密钥分页列表（standalone 由后端过滤·true=仅独立 Key） */
+export function fetchAccessKeys(params: {
+  pageNum?: number;
+  pageSize?: number;
+  projectCode?: string;
+  standalone?: boolean;
+}) {
   return request<NexusAI.Page<NexusAI.AccessKey>>({ url: '/admin/access-keys', params });
 }
 

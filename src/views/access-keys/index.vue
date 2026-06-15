@@ -49,10 +49,11 @@ async function loadAccessKeys() {
   const { data } = await fetchAccessKeys({
     pageNum: page.value,
     pageSize: size.value,
-    projectCode: projectFilter.value ?? undefined
+    projectCode: projectFilter.value ?? undefined,
+    standalone: true
   });
-  // 一比一 Aether：列表只展示独立 Key（standalone===1），其余前端过滤丢弃
-  rows.value = (data?.records ?? []).filter(k => k.standalone === 1);
+  // 列表只展示独立 Key：standalone 过滤由后端完成，total 即服务端已过滤的真实总数（分页正确）
+  rows.value = data?.records ?? [];
   total.value = data?.total ?? 0;
   loading.value = false;
 }
