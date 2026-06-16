@@ -6,6 +6,7 @@ import com.nexusai.common.exception.GatewayException;
 import com.nexusai.common.model.PageQuery;
 import com.nexusai.common.model.PageResult;
 import com.nexusai.common.model.R;
+import com.nexusai.control.api.security.CallerScope;
 import com.nexusai.control.domain.project.usage.service.UsageQueryService;
 import com.nexusai.control.domain.project.usage.vo.ActiveRequestVo;
 import com.nexusai.control.domain.project.usage.vo.IntervalTimelineVo;
@@ -169,18 +170,14 @@ public class UsageQueryController {
         return v == null ? null : v.toString();
     }
 
-    /** 可行级过滤端点：项目令牌强制本项目（忽略入参防越权枚举）；平台令牌沿用入参（可空=全部项目）。 */
+    /** 可行级过滤端点：委托 {@link CallerScope}（单项目 M2M 强制本项目 / 多项目运维须落授权集 / 平台令牌沿用入参）。 */
     private static String scopeProject(ServerWebExchange exchange, String requested) {
-        String caller = callerProject(exchange);
-        return caller != null ? caller : requested;
+        return CallerScope.scopeProject(exchange, requested);
     }
 
-    /** 不可行级过滤的跨项目总览端点：项目令牌一律 403（仅平台运营/控制台可见）。 */
+    /** 不可行级过滤的跨项目总览端点：任何受限调用方（项目令牌/项目运维）一律 403（见 {@link CallerScope#requirePlatform}）。 */
     private static void requirePlatform(ServerWebExchange exchange) {
-        if (callerProject(exchange) != null) {
-            throw GatewayException.of(GatewayErrorCode.PROJECT_SCOPE_DENIED,
-                    "该跨项目总览端点仅平台作用域令牌或控制台可访问");
-        }
+        CallerScope.requirePlatform(exchange);
     }
 
     /** 组装存储无关查询条件：beginTime/endTime（ISO·空格分隔均可）优先，未给时退回 hours 预设换算。 */

@@ -64,6 +64,30 @@ CREATE TABLE IF NOT EXISTS nai_project (
   UNIQUE (token)
 );
 
+-- 控制台运维账号（人类登录主体·账密真理源·借鉴 snail-ai sai_user / snail-job sj_system_user）
+CREATE TABLE IF NOT EXISTS nai_admin_user (
+  id        BIGINT       NOT NULL PRIMARY KEY,
+  username  VARCHAR(64)  NOT NULL,
+  password  VARCHAR(128) NOT NULL,
+  role      SMALLINT     NOT NULL DEFAULT 1,
+  status    SMALLINT     DEFAULT 1,
+  create_dt TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  update_dt TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (username)
+);
+COMMENT ON TABLE nai_admin_user IS '控制台运维账号(role 2超管/1项目运维)';
+
+-- 运维账号×项目授权（项目运维身份的命名空间式授权·project=snail-job namespace）
+CREATE TABLE IF NOT EXISTS nai_admin_user_project (
+  id            BIGINT      NOT NULL PRIMARY KEY,
+  admin_user_id BIGINT      NOT NULL,
+  project_code  VARCHAR(64) NOT NULL,
+  create_dt     TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+  update_dt     TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (admin_user_id, project_code)
+);
+COMMENT ON TABLE nai_admin_user_project IS '运维账号×项目授权';
+
 -- 项目内工作区（三层身份链·B2C 终端工作区钱包）
 CREATE TABLE IF NOT EXISTS nai_workspace (
   id            BIGINT       NOT NULL PRIMARY KEY,

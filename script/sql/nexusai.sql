@@ -59,6 +59,33 @@ CREATE TABLE IF NOT EXISTS `nai_project` (
   UNIQUE KEY `uk_project_token` (`token`)
 ) ENGINE=InnoDB COMMENT='项目(工作区+控制面集成边界)';
 
+-- 控制台运维账号（人类登录主体·账密真理源·借鉴 snail-ai sai_user / snail-job sj_system_user）：
+-- role=2 超管(全 /admin) / role=1 项目运维(仅被授权项目的自助端点·授权见 nai_admin_user_project)。
+-- 口令 PBKDF2 加盐哈希(pbkdf2$iter$salt$hash)·明文永不落库。首次启动表空时由 AdminUserSeeder 播种默认超管 admin/admin123。
+CREATE TABLE IF NOT EXISTS `nai_admin_user` (
+  `id`        BIGINT       NOT NULL COMMENT '雪花ID',
+  `username`  VARCHAR(64)  NOT NULL COMMENT '登录账号',
+  `password`  VARCHAR(128) NOT NULL COMMENT '口令哈希(PBKDF2·pbkdf2$iter$salt$hash)',
+  `role`      TINYINT      NOT NULL DEFAULT 1 COMMENT '角色 1=项目运维 2=超管',
+  `status`    TINYINT      DEFAULT 1 COMMENT '1启用 0停用',
+  `create_dt` DATETIME     DEFAULT CURRENT_TIMESTAMP,
+  `update_dt` DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_admin_username` (`username`)
+) ENGINE=InnoDB COMMENT='控制台运维账号';
+
+-- 运维账号×项目授权（项目运维身份的行级授权·借鉴 snail-job sj_system_user_permission 的 namespace 授权·project=namespace）。
+-- 一行=该账号被授权管理该 project_code；超管不登记(全项目)。
+CREATE TABLE IF NOT EXISTS `nai_admin_user_project` (
+  `id`            BIGINT      NOT NULL COMMENT '雪花ID',
+  `admin_user_id` BIGINT      NOT NULL COMMENT '关联 nai_admin_user.id',
+  `project_code`  VARCHAR(64) NOT NULL COMMENT '被授权的项目码(关联 nai_project.project_code)',
+  `create_dt`     DATETIME    DEFAULT CURRENT_TIMESTAMP,
+  `update_dt`     DATETIME    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_admin_user_project` (`admin_user_id`, `project_code`)
+) ENGINE=InnoDB COMMENT='运维账号×项目授权';
+
 -- 项目内工作区（三层身份链·按工作区隔离的额度钱包）：
 -- B2C 中转站形态的终端工作区钱包——project=站点/分销商(容器)·workspace=散户工作区(钱包主闸)·token 挂 workspace；
 -- B2B 套壳应用形态不建 workspace（token 直挂项目池）。external_id=业务面工作区标识(幂等键·业务面 userId 等)

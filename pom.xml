@@ -29,7 +29,6 @@
         <!-- 第三方版本（SB BOM 未管理的） -->
         <mybatis-plus.version>3.5.14</mybatis-plus.version>
         <redisson.version>3.52.0</redisson.version>
-        <hutool.version>5.8.43</hutool.version>
         <!-- ClickHouse JDBC 驱动（日志分析后端·SB BOM 未含·仅 store=clickhouse 部署需要·驱动在 server-starter 声明） -->
         <clickhouse.version>0.6.5</clickhouse.version>
     </properties>
@@ -178,11 +177,6 @@
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>${redisson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.hutool</groupId>
-                <artifactId>hutool-core</artifactId>
-                <version>${hutool.version}</version>
             </dependency>
             <!-- ClickHouse 官方 JDBC 驱动（非 shaded·避免 :all uber-jar 在 spring-boot fat jar 下 ClickHouseDriver.<clinit> 找不到内部 client 类）。
                  仅在 server-starter「数据库驱动依赖」分区引用（runtime）·driver 代码模块不绑驱动。httpclient5 由 SB BOM 管理。 -->

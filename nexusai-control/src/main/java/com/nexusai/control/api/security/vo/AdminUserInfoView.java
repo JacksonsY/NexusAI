@@ -1,14 +1,17 @@
 package com.nexusai.control.api.security.vo;
 
+import java.util.List;
+
 /**
- * 控制台当前登录用户信息视图（替代原裸 {@code Map<String,Object>}）。
- * <p>component 名即 JSON 键，与原 Map 键 {@code username}/{@code loginId} 一致。
- * {@code loginId} 保持 {@link Object} 以与 {@code StpUtil.getLoginIdDefaultNull()} 的可空返回逐字节同构
- * （未登录时为 {@code null}·序列化为 JSON null）。
+ * 控制台当前登录用户信息视图。component 名即 JSON 键，前端 {@code fetchAdminUserInfo} 据此渲染身份/菜单：
+ * <ul>
+ *   <li>{@code username}：登录账号；</li>
+ *   <li>{@code role}：1 项目运维 / 2 超管（前端按角色裁菜单·静态超管路由）；</li>
+ *   <li>{@code projects}：项目运维被授权的项目码集（超管为空=全项目）；</li>
+ *   <li>{@code loginId}：Sa-Token 登录主体（未登录为 {@code null}·序列化为 JSON null）。</li>
+ * </ul>
  *
- * @param username 控制台账号
- * @param loginId  Sa-Token 登录主体标识（未登录为 {@code null}）
  * @author nexusai
  */
-public record AdminUserInfoView(String username, Object loginId) {
+public record AdminUserInfoView(String username, Integer role, List<String> projects, Object loginId) {
 }
