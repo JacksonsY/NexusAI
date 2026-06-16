@@ -136,6 +136,16 @@ DELETE FROM nai_token WHERE id = 900003;
 INSERT INTO nai_token (id, key_hash, project_code, workspace_id, group_code, quota_usd, status)
 VALUES (900003, SHA2('sk-demo-enduser-001', 256), 'mobile-app', 950001, 'default', NULL, 1);
 
+-- 控制台运维账号（双身份演示）：默认超管 admin 由 AdminUserSeeder 首启播种(不在此重复)；
+-- 这里仅演示一个「项目运维」账号 demo-ops（口令 ops123·PBKDF2 哈希·仅本地联调），授权 my-saas + mobile-app 两项目。
+DELETE FROM nai_admin_user_project WHERE admin_user_id = 960001;
+DELETE FROM nai_admin_user WHERE id = 960001;
+INSERT INTO nai_admin_user (id, username, password, role, status)
+VALUES (960001, 'demo-ops', 'pbkdf2$120000$ABEiM0RVZneImaq7zN3u/w==$qu4t7P7mug7YqaATovPJz8GYLLOLBE7zKezg5ieLxQM=', 1, 1);
+INSERT INTO nai_admin_user_project (id, admin_user_id, project_code)
+VALUES (960101, 960001, 'my-saas'),
+       (960102, 960001, 'mobile-app');
+
 -- 独立密钥全功能演示（展示 /keys 页丰富列：白名单四件套/限流/并发/过期·明文 sk-demo-standalone-001）
 DELETE FROM nai_token WHERE id = 900004;
 INSERT INTO nai_token (id, key_hash, name, standalone, project_code, group_code, model_limits, allow_ips, allow_api_formats, quota_usd, rpm_limit, tpm_limit, concurrent_limit, expired_time, auto_delete_on_expiry, status)
@@ -541,7 +551,7 @@ INSERT INTO nai_settlement_outbox (id, request_id, token_id, project_code, refun
 -- 幂等防重走 Redis·不落库（nai_idempotent 死表已删·无演示数据）
 
 -- =====================================================================
--- 全表覆盖校验（22 张 nai_ 表·确认无遗落·数字应均 > 0）
+-- 全表覆盖校验（24 张 nai_ 表·确认无遗落·数字应均 > 0）
 -- =====================================================================
 SELECT 'nai_channel'            t, COUNT(*) demo_cnt FROM nai_channel
 UNION ALL SELECT 'nai_channel_key',       COUNT(*) FROM nai_channel_key
@@ -564,4 +574,6 @@ UNION ALL SELECT 'nai_node(demo)',        COUNT(*) FROM nai_node             WHE
 UNION ALL SELECT 'nai_audit_log',         COUNT(*) FROM nai_audit_log
 UNION ALL SELECT 'nai_alert_rule(demo)',  COUNT(*) FROM nai_alert_rule       WHERE name LIKE 'demo-%'
 UNION ALL SELECT 'nai_alert_event',       COUNT(*) FROM nai_alert_event
-UNION ALL SELECT 'nai_system_config',     COUNT(*) FROM nai_system_config;
+UNION ALL SELECT 'nai_system_config',     COUNT(*) FROM nai_system_config
+UNION ALL SELECT 'nai_admin_user(demo)',  COUNT(*) FROM nai_admin_user        WHERE id = 960001
+UNION ALL SELECT 'nai_admin_user_project', COUNT(*) FROM nai_admin_user_project WHERE admin_user_id = 960001;

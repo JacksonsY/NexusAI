@@ -7,6 +7,7 @@ import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.nexusai.common.constant.GatewayConstants;
+import com.nexusai.persistence.po.NaiAdminUser;
 import com.nexusai.persistence.po.NaiProject;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +46,15 @@ public class SaTokenConfigure {
                         }
                         throw new SaTokenException(ProjectScopes.SCOPE_DENIED);
                     }
-                    StpUtil.checkLogin();   // 控制台账密会话 = 平台全权
+                    StpUtil.checkLogin();   // 控制台账密会话
+                    // 人类账号双身份：超管全权；项目运维仅限自助端点（与项目作用域令牌同一路径白名单·行级项目过滤见 CallerScopeWebFilter）
+                    int role = AdminSessionKeys.role(StpUtil.getSession());
+                    String path = SaHolder.getRequest().getRequestPath();
+                    if (NaiAdminUser.ROLE_USER == role
+                            && !isSelfEndpoint(path)
+                            && !ProjectScopes.allowsProjectToken(path)) {
+                        throw new SaTokenException(ProjectScopes.SCOPE_DENIED);
+                    }
                 }))
                 .setError(e -> {
                     if (ProjectScopes.SCOPE_DENIED.equals(e.getMessage())) {
@@ -55,5 +64,10 @@ public class SaTokenConfigure {
                     SaHolder.getResponse().setStatus(HTTP_UNAUTHORIZED);
                     return SaResult.error("未登录或令牌失效").setCode(HTTP_UNAUTHORIZED);
                 });
+    }
+
+    /** 自身身份端点（任何登录态放行·不受项目运维路径闸限制）：查询自己 + 登出。 */
+    private static boolean isSelfEndpoint(String path) {
+        return "/admin/userinfo".equals(path) || "/admin/logout".equals(path);
     }
 }

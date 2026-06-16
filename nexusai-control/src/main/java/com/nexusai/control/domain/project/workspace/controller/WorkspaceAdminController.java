@@ -3,12 +3,12 @@ package com.nexusai.control.domain.project.workspace.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexusai.billing.quota.QuotaLedger;
-import com.nexusai.common.constant.GatewayConstants;
 import com.nexusai.common.exception.GatewayErrorCode;
 import com.nexusai.common.exception.GatewayException;
 import com.nexusai.common.model.PageQuery;
 import com.nexusai.common.model.PageResult;
 import com.nexusai.common.model.R;
+import com.nexusai.control.api.security.CallerScope;
 import com.nexusai.persistence.mapper.NaiWorkspaceMapper;
 import com.nexusai.persistence.po.NaiWorkspace;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +48,8 @@ public class WorkspaceAdminController {
                                              @RequestParam(required = false) String keyword,
                                              ServerWebExchange exchange) {
         PageQuery pq = PageQuery.of(pageNum, pageSize);
-        // 项目作用域令牌：强制只列自己项目的工作区（忽略传入 projectCode·防越权列举他项目）
-        Object restrict = exchange.getAttribute(GatewayConstants.CALLER_PROJECT_ATTR);
-        final String scopedProject = restrict != null ? restrict.toString() : projectCode;
+        // 作用域收口：项目令牌/项目运维账号只能列被授权项目的工作区（忽略越权入参）
+        final String scopedProject = CallerScope.scopeProject(exchange, projectCode);
         return Mono.fromCallable(() -> {
             LambdaQueryWrapper<NaiWorkspace> qw = new LambdaQueryWrapper<NaiWorkspace>()
                     .eq(scopedProject != null && !scopedProject.isBlank(), NaiWorkspace::getProjectCode, scopedProject)
@@ -123,12 +122,8 @@ public class WorkspaceAdminController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    /** 项目作用域令牌跨项目越权校验：受限调用方(CallerScopeWebFilter 写入)的 projectCode 必须 == 目标，否则 403。 */
+    /** 委托作用域收口（单项目 M2M / 多项目运维 / 不限·见 {@link CallerScope}）。 */
     private static void assertProjectScope(ServerWebExchange exchange, String targetProjectCode) {
-        Object restrict = exchange.getAttribute(GatewayConstants.CALLER_PROJECT_ATTR);
-        if (restrict != null && !restrict.equals(targetProjectCode)) {
-            throw GatewayException.of(GatewayErrorCode.PROJECT_SCOPE_DENIED,
-                    "项目令牌(" + restrict + ")无权操作其他项目: " + targetProjectCode);
-        }
+        CallerScope.assertProjectScope(exchange, targetProjectCode);
     }
 }

@@ -7,6 +7,7 @@ import com.nexusai.common.event.ConfigChangedEvent;
 import com.nexusai.common.exception.GatewayErrorCode;
 import com.nexusai.common.exception.GatewayException;
 import com.nexusai.common.model.R;
+import com.nexusai.control.api.security.CallerScope;
 import com.nexusai.persistence.mapper.NaiTokenMapper;
 import com.nexusai.persistence.mapper.NaiWorkspaceMapper;
 import com.nexusai.persistence.po.NaiToken;
@@ -52,13 +53,9 @@ public class KeySyncController {
                 .publish(String.valueOf(tokenId));
     }
 
-    /** 项目作用域令牌跨项目越权校验：受限调用方(CallerScopeWebFilter 写入)的 projectCode 必须 == 目标，否则 403。 */
+    /** 委托作用域收口（单项目 M2M / 多项目运维 / 不限·见 {@link CallerScope}）。 */
     private static void assertProjectScope(ServerWebExchange exchange, String targetProjectCode) {
-        Object restrict = exchange.getAttribute(GatewayConstants.CALLER_PROJECT_ATTR);
-        if (restrict != null && !restrict.equals(targetProjectCode)) {
-            throw GatewayException.of(GatewayErrorCode.PROJECT_SCOPE_DENIED,
-                    "项目令牌(" + restrict + ")无权操作其他项目: " + targetProjectCode);
-        }
+        CallerScope.assertProjectScope(exchange, targetProjectCode);
     }
 
     @PutMapping

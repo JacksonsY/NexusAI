@@ -28,6 +28,10 @@ public final class GatewayConstants {
     /** 控制面调用方受限项目码（项目作用域令牌时由 CallerScopeWebFilter 写入·/admin 控制器据此做 body 级 projectCode 同项目校验·空=平台/admin 不限） */
     public static final String CALLER_PROJECT_ATTR = "nexusai.caller.project";
 
+    /** 控制台「项目运维」账号被授权的项目码集合（{@code Set<String>}·人类 USER 会话时由 CallerScopeWebFilter 从 Sa-Token 会话写入·
+     *  控制器据此做行级项目过滤/越权校验·空=超管或平台令牌不限）。与 {@link #CALLER_PROJECT_ATTR}（单项目 M2M 令牌）互补。 */
+    public static final String CALLER_PROJECTS_ATTR = "nexusai.caller.projects";
+
     /** TraceId 请求/响应头（全链路串联·observe TraceIdWebFilter 写入并回写响应） */
     public static final String TRACE_HEADER = "X-Trace-Id";
     /** TraceId 透传属性键（exchange attribute·与 {@link #CTX_ATTR} 同源收口于 common 单一真理源，消除 observe↔relay 隐式键约定） */

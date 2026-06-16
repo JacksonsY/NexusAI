@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexusai.contract.quota.BalanceView;
 import com.nexusai.contract.quota.QuotaOpRequest;
 import com.nexusai.billing.quota.QuotaLedger;
-import com.nexusai.common.constant.GatewayConstants;
 import com.nexusai.common.exception.GatewayErrorCode;
 import com.nexusai.common.exception.GatewayException;
 import com.nexusai.common.model.R;
+import com.nexusai.control.api.security.CallerScope;
 import com.nexusai.billing.money.UsdAmount;
 import com.nexusai.persistence.mapper.NaiProjectMapper;
 import com.nexusai.persistence.mapper.NaiWorkspaceMapper;
@@ -83,7 +83,7 @@ public class QuotaOperationController {
             }
             // 🔴 越权防护：项目作用域令牌（受限调用方）不得充值/预扣自己的项目额度池（= 分销商进货额度·仅平台运营可调）。
             // 仅允许其对工作区钱包充值（给终端用户充值·B2C 自助）与 subtract 扣减。
-            boolean restricted = exchange.getAttribute(GatewayConstants.CALLER_PROJECT_ATTR) != null;
+            boolean restricted = CallerScope.restricted(exchange);
             if (restricted && !workspaceScope && (OP_ADD.equals(op) || OP_FREEZE.equals(op))) {
                 throw GatewayException.of(GatewayErrorCode.PROJECT_SCOPE_DENIED,
                         "项目令牌不可充值/预扣项目额度池（进货额度仅平台运营可调整）");
@@ -185,12 +185,8 @@ public class QuotaOperationController {
         return user;
     }
 
-    /** 项目作用域令牌跨项目越权校验：受限调用方(CallerScopeWebFilter 写入)的 projectCode 必须 == 目标，否则 403。 */
+    /** 委托作用域收口（单项目 M2M / 多项目运维 / 不限·见 {@link CallerScope}）。 */
     private static void assertProjectScope(ServerWebExchange exchange, String targetProjectCode) {
-        Object restrict = exchange.getAttribute(GatewayConstants.CALLER_PROJECT_ATTR);
-        if (restrict != null && !restrict.equals(targetProjectCode)) {
-            throw GatewayException.of(GatewayErrorCode.PROJECT_SCOPE_DENIED,
-                    "项目令牌(" + restrict + ")无权操作其他项目: " + targetProjectCode);
-        }
+        CallerScope.assertProjectScope(exchange, targetProjectCode);
     }
 }

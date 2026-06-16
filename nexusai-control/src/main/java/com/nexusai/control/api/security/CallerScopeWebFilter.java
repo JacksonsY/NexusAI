@@ -1,6 +1,9 @@
 package com.nexusai.control.api.security;
 
+import cn.dev33.satoken.reactor.context.SaReactorSyncHolder;
+import cn.dev33.satoken.stp.StpUtil;
 import com.nexusai.common.constant.GatewayConstants;
+import com.nexusai.persistence.po.NaiAdminUser;
 import com.nexusai.persistence.po.NaiProject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.Ordered;
@@ -9,6 +12,10 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * 调用方作用域标记（令牌 scope 收口·数据级第二层）：对 {@code /admin/**} 请求，若携带的是<b>项目作用域</b>令牌，
@@ -31,11 +38,38 @@ public class CallerScopeWebFilter implements WebFilter, Ordered {
         if (path.startsWith("/admin/")) {
             String token = exchange.getRequest().getHeaders().getFirst(GatewayConstants.ADMIN_TOKEN_HEADER);
             NaiProject caller = tokenCache.match(token);
-            if (caller != null && !ProjectScopes.PLATFORM.equals(caller.getScope())) {
-                exchange.getAttributes().put(GatewayConstants.CALLER_PROJECT_ATTR, caller.getProjectCode());
+            if (caller != null) {
+                // M2M 项目作用域令牌 → 单项目受限码（平台令牌不写=不限）
+                if (!ProjectScopes.PLATFORM.equals(caller.getScope())) {
+                    exchange.getAttributes().put(GatewayConstants.CALLER_PROJECT_ATTR, caller.getProjectCode());
+                }
+            } else {
+                // 人类账号会话：项目运维（USER）→ 写其被授权项目集（多项目行级过滤）；超管不写=不限
+                writeHumanScope(exchange);
             }
         }
         return chain.filter(exchange);
+    }
+
+    /**
+     * 项目运维（USER）会话 → 写其被授权项目集到 {@link GatewayConstants#CALLER_PROJECTS_ATTR}（供 {@link CallerScope} 行级过滤）。
+     * 超管/未登录不写（= 不限·未登录由 {@link SaTokenConfigure} 拒绝）。Sa 会话为内存态·读取不阻塞事件循环。
+     */
+    private static void writeHumanScope(ServerWebExchange exchange) {
+        SaReactorSyncHolder.setContext(exchange);
+        try {
+            if (!StpUtil.isLogin()) {
+                return;
+            }
+            int role = AdminSessionKeys.role(StpUtil.getSession());
+            if (NaiAdminUser.ROLE_USER != role) {
+                return;
+            }
+            Set<String> set = new HashSet<>(AdminSessionKeys.projects(StpUtil.getSession()));
+            exchange.getAttributes().put(GatewayConstants.CALLER_PROJECTS_ATTR, set);
+        } finally {
+            SaReactorSyncHolder.clearContext();
+        }
     }
 
     @Override
