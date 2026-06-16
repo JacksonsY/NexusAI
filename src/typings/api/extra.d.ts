@@ -875,15 +875,6 @@ declare namespace NexusAI {
     failed?: number | string;
     byStatus?: Record<string, number | string>;
   }
-
-  interface Idempotent {
-    id?: number;
-    idempotentKey?: string;
-    requestId?: string;
-    status?: number;
-    createDt?: string;
-    [key: string]: unknown;
-  }
 }
 /** nexusai 控制台领域类型 · 独立密钥域（standalone Access Key·AccessKeys·对接 /admin/access-keys）。 */
 declare namespace NexusAI {

@@ -29,8 +29,3 @@ export function fetchTaskDetail(taskId: string) {
 export function fetchCancelTask(taskId: string) {
   return request<void>({ url: `/admin/tasks/${taskId}/cancel`, method: 'post' });
 }
-
-// ===== 幂等记录 Idempotents =====
-export function fetchIdempotents(params: { pageNum?: number; pageSize?: number }) {
-  return request<NexusAI.Page<NexusAI.Idempotent>>({ url: '/admin/idempotents', params });
-}
