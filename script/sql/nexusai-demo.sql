@@ -538,18 +538,10 @@ INSERT INTO nai_settlement_outbox (id, request_id, token_id, project_code, refun
 (973000000000000005, 'req-demo-t000099', 900001, 'my-saas',    6000, 0, 3,  '额度服务 5xx·待重试',                   NOW() - INTERVAL 5 MINUTE,  NOW() - INTERVAL 90 MINUTE),
 (973000000000000006, 'req-demo-t000120', 900002, 'mobile-app',   -2500, 1, 1,  NULL,                                    NOW() - INTERVAL 3 HOUR,    NOW() - INTERVAL 190 MINUTE);
 
--- ===================== 幂等记录（防重复提交·状态：1=完成 0=进行中） =====================
-DELETE FROM nai_idempotent WHERE idempotent_key LIKE 'demo-%';
-INSERT INTO nai_idempotent (id, idempotent_key, request_id, status, create_dt) VALUES
-(974000000000000001, 'demo-idem-8f3kq2pl', 'req-demo-t000005', 1, NOW() - INTERVAL 10 MINUTE),
-(974000000000000002, 'demo-idem-jr5xhb2c', 'req-demo-t000012', 1, NOW() - INTERVAL 25 MINUTE),
-(974000000000000003, 'demo-idem-kv9znc4w', 'req-demo-t000028', 0, NOW() - INTERVAL 2 MINUTE),
-(974000000000000004, 'demo-idem-pl2mzx7q', 'req-demo-t000044', 1, NOW() - INTERVAL 3 HOUR),
-(974000000000000005, 'demo-idem-yd7eaq1u', 'req-demo-t000066', 1, NOW() - INTERVAL 1 DAY),
-(974000000000000006, 'demo-idem-cy3wfn5k', 'req-demo-t000088', 1, NOW() - INTERVAL 5 HOUR);
+-- 幂等防重走 Redis·不落库（nai_idempotent 死表已删·无演示数据）
 
 -- =====================================================================
--- 全表覆盖校验（23 张 nai_ 表·确认无遗落·数字应均 > 0）
+-- 全表覆盖校验（22 张 nai_ 表·确认无遗落·数字应均 > 0）
 -- =====================================================================
 SELECT 'nai_channel'            t, COUNT(*) demo_cnt FROM nai_channel
 UNION ALL SELECT 'nai_channel_key',       COUNT(*) FROM nai_channel_key
@@ -562,7 +554,6 @@ UNION ALL SELECT 'nai_request_log(demo)', COUNT(*) FROM nai_request_log      WHE
 UNION ALL SELECT 'nai_request_body(demo)',COUNT(*) FROM nai_request_body     WHERE request_id LIKE 'req-demo-%'
 UNION ALL SELECT 'nai_usage_log(demo)',   COUNT(*) FROM nai_usage_log        WHERE request_id LIKE 'req-demo-%'
 UNION ALL SELECT 'nai_settlement_outbox', COUNT(*) FROM nai_settlement_outbox WHERE request_id LIKE 'req-demo-%'
-UNION ALL SELECT 'nai_idempotent(demo)',  COUNT(*) FROM nai_idempotent       WHERE idempotent_key LIKE 'demo-%'
 UNION ALL SELECT 'nai_task(demo)',        COUNT(*) FROM nai_task             WHERE task_id LIKE 'task-demo-%'
 UNION ALL SELECT 'nai_routing_group',     COUNT(*) FROM nai_routing_group
 UNION ALL SELECT 'nai_failover_event',    COUNT(*) FROM nai_failover_event   WHERE reason LIKE 'demo:%'

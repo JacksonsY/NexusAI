@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `nai_channel_key` (
   `create_dt`                DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_dt`                DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_channel` (`channel_id`)
+  KEY `idx_channel_status` (`channel_id`, `status`)
 ) ENGINE=InnoDB COMMENT='渠道密钥池(Key 池)';
 
 -- 路由索引(abilities)
@@ -294,22 +294,13 @@ CREATE TABLE IF NOT EXISTS `nai_request_log` (
   PRIMARY KEY (`id`),
   KEY `idx_request` (`request_id`),
   KEY `idx_project_model` (`project_code`, `model`),
+  KEY `idx_project_dt` (`project_code`, `create_dt`),
   KEY `idx_create_dt` (`create_dt`),
   KEY `idx_channel_dt` (`channel_id`, `create_dt`),
   KEY `idx_status_dt` (`http_status`, `create_dt`)
 ) ENGINE=InnoDB COMMENT='请求日志(网关最大表)';
 
--- 幂等记录（防重复提交·按幂等键短保留）
-CREATE TABLE IF NOT EXISTS `nai_idempotent` (
-  `id`             BIGINT        NOT NULL COMMENT '雪花ID',
-  `idempotent_key` VARCHAR(128)  NOT NULL,
-  `request_id`     VARCHAR(64)   DEFAULT NULL,
-  `status`         TINYINT       DEFAULT 1,
-  `create_dt`      DATETIME      DEFAULT CURRENT_TIMESTAMP,
-  `update_dt`      DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_idem` (`idempotent_key`)
-) ENGINE=InnoDB COMMENT='幂等记录';
+-- 幂等防重全部走 Redis（IdempotencyFilter·SETNX+TTL·跨实例）；不落库（旧 nai_idempotent 死表已删）。
 
 -- 结算补偿 outbox（QuotaLedger.settle 失败后的持久重放队列）
 CREATE TABLE IF NOT EXISTS `nai_settlement_outbox` (
@@ -484,3 +475,35 @@ CREATE TABLE IF NOT EXISTS `nai_alert_event` (
   KEY `idx_alert_event_rule_status` (`rule_id`, `status`),
   KEY `idx_alert_event_dt` (`create_dt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='运维告警事件';
+
+-- =====================================================================
+-- 附录·时序表分区运维参考（部署/扩容期手动启用·MVP 单机不预置）
+-- =====================================================================
+-- 适用：写入按时间增长、保留期固定、清理靠"丢弃整段"的表。优于 DELETE 百万行——
+-- DROP PARTITION 仅改元数据（毫秒级）；查询带 create_dt 范围即触发 partition pruning（EXPLAIN PARTITIONS 验证）。
+--
+-- 取舍：
+--   · nai_request_log —— 已有应用层 nexusai.log.sharding（按时间滚动分表）。二选一，勿与原生分区叠用。
+--     若改用原生分区：关闭 LOG_SHARDING，按下方模板改造（PK 须含分区列）。
+--   · nai_failover_event / nai_audit_log / nai_alert_event / nai_proxy_node_event / nai_usage_log
+--     —— 无 sharding，量起来后建议直接套用原生 RANGE 月分区。
+--
+-- 约束：MySQL 分区要求每个唯一键/主键都包含分区列 → PK 由 (id) 改为 (id, create_dt)。
+-- 雪花 id 全局唯一，应用层仍以 id 作逻辑主键（MyBatis-Plus @TableId 不变），DB 复合 PK 仅为分区合法性。
+-- 维护：必须周期性预建下月分区（否则落入 pMax 兜底分区即退化为普通表）；过期分区 DROP。
+--
+-- 模板（以 nai_audit_log 为例·改造既有表）：
+--   ALTER TABLE `nai_audit_log` DROP PRIMARY KEY, ADD PRIMARY KEY (`id`, `create_dt`);
+--   ALTER TABLE `nai_audit_log` PARTITION BY RANGE (TO_DAYS(`create_dt`)) (
+--     PARTITION p202606 VALUES LESS THAN (TO_DAYS('2026-07-01')),
+--     PARTITION p202607 VALUES LESS THAN (TO_DAYS('2026-08-01')),
+--     PARTITION pMax    VALUES LESS THAN MAXVALUE
+--   );
+-- 每月预建（示例·投产用调度/运维脚本执行）：
+--   ALTER TABLE `nai_audit_log` REORGANIZE PARTITION pMax INTO (
+--     PARTITION p202608 VALUES LESS THAN (TO_DAYS('2026-09-01')),
+--     PARTITION pMax    VALUES LESS THAN MAXVALUE
+--   );
+-- 过期清理（保留 N 月后）：
+--   ALTER TABLE `nai_audit_log` DROP PARTITION p202606;
+-- 单分区控制在 ~5000 万行内（按写入量选 day/week/month 粒度）。

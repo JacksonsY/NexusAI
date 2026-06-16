@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS nai_channel_key (
   PRIMARY KEY (id)
 );
 COMMENT ON TABLE nai_channel_key IS '渠道密钥池(Key 池)';
-CREATE INDEX IF NOT EXISTS idx_channel ON nai_channel_key (channel_id);
+CREATE INDEX IF NOT EXISTS idx_channel_status ON nai_channel_key (channel_id, status);
 
 -- 路由索引(abilities)
 CREATE TABLE IF NOT EXISTS nai_ability (
@@ -301,22 +301,12 @@ CREATE TABLE IF NOT EXISTS nai_request_log (
 COMMENT ON TABLE nai_request_log IS '请求日志(网关最大表)';
 CREATE INDEX IF NOT EXISTS idx_reqlog_request ON nai_request_log (request_id);
 CREATE INDEX IF NOT EXISTS idx_reqlog_project_model ON nai_request_log (project_code, model);
+CREATE INDEX IF NOT EXISTS idx_reqlog_project_dt ON nai_request_log (project_code, create_dt);
 CREATE INDEX IF NOT EXISTS idx_reqlog_create_dt ON nai_request_log (create_dt);
 CREATE INDEX IF NOT EXISTS idx_reqlog_channel_dt ON nai_request_log (channel_id, create_dt);
 CREATE INDEX IF NOT EXISTS idx_reqlog_status_dt ON nai_request_log (http_status, create_dt);
 
--- 幂等记录（防重复提交·按幂等键短保留）
-CREATE TABLE IF NOT EXISTS nai_idempotent (
-  id             BIGINT        NOT NULL,
-  idempotent_key VARCHAR(128)  NOT NULL,
-  request_id     VARCHAR(64)   DEFAULT NULL,
-  status         SMALLINT      DEFAULT 1,
-  create_dt      TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-  update_dt      TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  CONSTRAINT uk_idem UNIQUE (idempotent_key)
-);
-COMMENT ON TABLE nai_idempotent IS '幂等记录';
+-- 幂等防重全部走 Redis（IdempotencyFilter·SETNX+TTL·跨实例）；不落库（旧 nai_idempotent 死表已删）。
 
 -- 结算补偿 outbox（QuotaLedger.settle 失败后的持久重放队列）
 CREATE TABLE IF NOT EXISTS nai_settlement_outbox (
