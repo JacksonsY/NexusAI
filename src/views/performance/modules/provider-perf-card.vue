@@ -4,7 +4,7 @@ import type { DataTableColumns } from 'naive-ui';
 
 defineOptions({ name: 'ProviderPerfCard' });
 
-/** 渠道性能聚合卡（一比一 Aether 上游服务性能：筛选 + 8 汇总卡 + 分位表格）。 */
+/** 渠道性能聚合卡（上游服务性能：筛选 + 8 汇总卡 + 分位表格）。 */
 const props = defineProps<{
   data: NexusAI.PerfProvidersResponse | null;
   loading: boolean;
@@ -44,7 +44,7 @@ function fmtCount(value?: number | string | null) {
   return n === null ? '-' : new Intl.NumberFormat('zh-CN').format(n);
 }
 
-/** 毫秒（≥1s 转秒·一比一 Aether formatDurationMs）。 */
+/** 毫秒（≥1s 转秒·formatDurationMs）。 */
 function fmtMs(value?: number | string | null, decimals = 0) {
   const n = num(value);
   if (n === null) return '-';
@@ -81,7 +81,7 @@ const slowLabel = computed(() => {
   return value >= 1000 ? `${value % 1000 === 0 ? value / 1000 : (value / 1000).toFixed(1)}s` : `${value}ms`;
 });
 
-/** 8 汇总卡（一比一 Aether providerPerformanceSummaryCards）。 */
+/** 8 汇总卡（providerPerformanceSummaryCards）。 */
 const summaryCards = computed(() => {
   const s = props.data?.summary;
   return [
@@ -96,7 +96,7 @@ const summaryCards = computed(() => {
   ];
 });
 
-/** 样本覆盖（一比一 Aether providerSampleCoverageText：响应% / 首字%）。 */
+/** 样本覆盖（providerSampleCoverageText：响应% / 首字%）。 */
 function coverageText(row: NexusAI.PerfProviderRow) {
   const total = num(row.requestCount) ?? 0;
   if (!total) return '-';
@@ -160,7 +160,7 @@ const columns = computed<DataTableColumns<NexusAI.PerfProviderRow>>(() => [
       </div>
     </div>
 
-    <!-- 筛选行（渠道/模型/能力/流式/慢阈值·一比一 Aether 筛选区·裁掉日志无列的 API 格式/格式转换） -->
+    <!-- 筛选行（渠道/模型/能力/流式/慢阈值·筛选区·裁掉日志无列的 API 格式/格式转换） -->
     <div class="grid grid-cols-1 mt-12px gap-8px sm:grid-cols-2 2xl:grid-cols-5 xl:grid-cols-3">
       <NSelect v-model:value="channelId" :options="channelOptions" placeholder="全部渠道" size="small" clearable aria-label="渠道筛选" />
       <NInput v-model:value="model" placeholder="模型" size="small" clearable :spellcheck="false" aria-label="模型筛选" />

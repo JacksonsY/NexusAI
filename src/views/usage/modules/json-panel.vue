@@ -5,7 +5,7 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import JsonContent from './json-content.vue';
 
 /**
- * JSON 内容面板（一比一 Aether JsonContentPanel）：json-panel-toolbar 标题/统计 +
+ * JSON 内容面板（JsonContentPanel）：json-panel-toolbar 标题/统计 +
  * json-panel-actions（展开深度步进 + 全部展开/收起 + 复制）+ JsonContent 树查看器。
  */
 defineOptions({ name: 'JsonPanel' });
@@ -16,7 +16,7 @@ const props = defineProps<{
   maxHeight?: number;
 }>();
 
-/** 初始展开深度（Aether 默认全展开·此处 99=全展开） */
+/** 初始展开深度（默认全展开·此处 99=全展开） */
 const expandDepth = ref(99);
 const copied = ref(false);
 
@@ -59,7 +59,7 @@ async function copy() {
 
 <template>
   <div class="overflow-hidden border border-gray-100 rounded-8px dark:border-gray-800">
-    <!-- json-panel-toolbar（Aether 对位） -->
+    <!-- json-panel-toolbar（对位） -->
     <div class="flex items-center justify-between gap-8px bg-gray-50 px-10px py-4px dark:bg-gray-800/60">
       <span class="truncate text-11px text-gray-400">{{ title || 'JSON' }} · {{ lineCount }} 行 · {{ byteLabel }}</span>
       <!-- json-panel-actions -->

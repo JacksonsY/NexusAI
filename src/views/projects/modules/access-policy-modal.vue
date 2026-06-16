@@ -1,4 +1,4 @@
-<!-- 项目访问策略弹窗（借鉴 axonhub Project Profiles 对话框·单策略简化）：
+<!-- 项目访问策略弹窗（Project Profiles 对话框·单策略简化）：
      允许的模型 / 允许的能力 / 允许的渠道 / 允许的渠道标签 + 匹配模式。每项留空 = 不限制。
      运行时由网关 ProjectPolicyFilter 执行（模型/能力越权 403·渠道候选硬过滤），约束项目下全部 sk- Key。 -->
 <script setup lang="ts">

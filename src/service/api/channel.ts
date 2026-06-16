@@ -4,7 +4,7 @@ import { request } from '../request';
 export function fetchChannels() {
   return request<NexusAI.Channel[]>({ url: '/admin/channels' });
 }
-/** 渠道汇总（提供商页·借鉴 Aether providers summary）：配置 + 凭证/模型水位 + 近 24h 流量 + 运行时健康。 */
+/** 渠道汇总（提供商页·providers summary）：配置 + 凭证/模型水位 + 近 24h 流量 + 运行时健康。 */
 export function fetchChannelSummary() {
   return request<NexusAI.ChannelSummary[]>({ url: '/admin/channels/summary' });
 }
@@ -30,7 +30,7 @@ export function fetchChannelBalance(id: number, force = false) {
   return request<NexusAI.ChannelBalance>({ url: `/admin/channels/${id}/balance`, params: { force } });
 }
 
-/** 批量启停（new-api 批量操作）。 */
+/** 批量启停（批量操作）。 */
 export function fetchBatchChannelStatus(ids: number[], status: number) {
   return request<void>({ url: '/admin/channels/batch-status', method: 'put', data: { ids, status } });
 }
@@ -38,11 +38,11 @@ export function fetchBatchChannelStatus(ids: number[], status: number) {
 export function fetchBatchDeleteChannels(ids: number[]) {
   return request<number>({ url: '/admin/channels/batch-delete', method: 'post', data: { ids } });
 }
-/** 渠道复制（new-api CopyChannel·新渠道默认停用）。 */
+/** 渠道复制（CopyChannel·新渠道默认停用）。 */
 export function fetchCopyChannel(id: number) {
   return request<number>({ url: `/admin/channels/${id}/copy`, method: 'post' });
 }
-/** 从上游拉取模型列表（new-api FetchUpstreamModels·与已注册对照）。 */
+/** 从上游拉取模型列表（FetchUpstreamModels·与已注册对照）。 */
 export function fetchChannelUpstreamModels(id: number) {
   return request<NexusAI.ChannelUpstreamModels>({ url: `/admin/channels/${id}/upstream-models` });
 }

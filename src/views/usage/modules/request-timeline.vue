@@ -5,7 +5,7 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import { fmtMs, num } from '../composables/format';
 
 /**
- * 请求链路追踪（一比一 Aether HorizontalRequestTimeline·按 nexusai failover 链映射）：
+ * 请求链路追踪（HorizontalRequestTimeline·按 nexusai failover 链映射）：
  * 横向节点流——接入 → 尝试1..N（渠道/错误码·失败红/转移黄/成功绿）→ 首字 → 完成；
  * 节点下标耗时，hover 看错误原因。
  */

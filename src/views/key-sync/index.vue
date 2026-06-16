@@ -5,8 +5,8 @@ import { fetchRevokeKey, fetchSyncKey } from '@/service/api';
 defineOptions({ name: 'KeySync' });
 
 /**
- * 契约① Key 同步调试（IA·运维台）：手工编排一份 KeySync 快照 PUT 到网关 `/admin/keys`（模拟 ruoyi 控制面下发），
- * 用于联调/排障。<b>生产由 ruoyi 业务面自动推送</b>，此页仅供运维手动触发与按 id 吊销，不是常规入口。
+ * 契约① Key 同步调试（IA·运维台）：手工编排一份 KeySync 快照 PUT 到网关 `/admin/keys`（模拟 业务面 控制面下发），
+ * 用于联调/排障。<b>生产由 业务面自动推送</b>，此页仅供运维手动触发与按 id 吊销，不是常规入口。
  */
 const form = reactive<NexusAI.KeySync>({
   keyHash: '',
@@ -56,7 +56,7 @@ async function doRevoke() {
   <NSpace vertical :size="16">
     <NCard title="契约① Key 同步（调试）" :bordered="false" size="small" class="card-wrapper">
       <NText depth="3" class="mb-3 block text-12px">
-        模拟 ruoyi 控制面把 Key 快照下发到网关（PUT /admin/keys·by keyHash upsert）。生产为 ruoyi 自动推送，此页仅联调/排障用。
+        模拟业务面控制面把 Key 快照下发到网关（PUT /admin/keys·by keyHash upsert）。生产为业务面自动推送，此页仅联调/排障用。
       </NText>
       <NForm label-placement="left" :label-width="120">
         <NGrid :cols="2" :x-gap="16">
@@ -72,7 +72,7 @@ async function doRevoke() {
           </NGridItem>
           <NGridItem>
             <NFormItem label="归属项目" required>
-              <NInput v-model:value="form.projectCode" placeholder="projectCode，如 ruoyi-saas" />
+              <NInput v-model:value="form.projectCode" placeholder="projectCode，如 my-saas" />
             </NFormItem>
           </NGridItem>
           <NGridItem>

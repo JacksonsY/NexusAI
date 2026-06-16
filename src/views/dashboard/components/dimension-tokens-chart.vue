@@ -1,4 +1,4 @@
-<!-- 维度 Token Top 分组柱图（一比一 axonhub TokensByChannelChart）：输入/输出/缓存三色并列（非堆叠）·X 轴显示名 -->
+<!-- 维度 Token Top 分组柱图（TokensByChannelChart）：输入/输出/缓存三色并列（非堆叠）·X 轴显示名 -->
 <script setup lang="ts">
 import { watch } from 'vue';
 import { useEcharts } from '@/hooks/common/echarts';
@@ -15,14 +15,14 @@ interface Row {
 }
 const props = defineProps<{ rows: Row[] }>();
 
-// axonhub TOKEN_COLORS：input/output/cached = chart-1/2/3，此处取清晰可分的蓝/绿/橙
+// TOKEN_COLORS：input/output/cached = chart-1/2/3，此处取清晰可分的蓝/绿/橙
 const TOKEN_COLORS = { input: '#2080f0', output: '#18a058', cached: '#f0a020' };
 
 const { domRef, updateOptions } = useEcharts(() => {
   const b = chartBase();
   return {
     textStyle: b.textStyle,
-    // 一比一 axonhub tokens tooltip：名称 + 输入/输出/缓存明细 + 分隔线 + Token 总计(占比)。顶部无色块图例（axonhub 同）
+    // tokens tooltip：名称 + 输入/输出/缓存明细 + 分隔线 + Token 总计(占比)。顶部无色块图例（同）
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },

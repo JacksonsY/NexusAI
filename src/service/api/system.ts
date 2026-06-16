@@ -1,6 +1,6 @@
 import { request } from '../request';
 
-// ===== 代理节点 Proxy Nodes（/admin/proxy-nodes·一比一 Aether ProxyNodes） =====
+// ===== 代理节点 Proxy Nodes（/admin/proxy-nodes·ProxyNodes） =====
 
 export function fetchProxyNodes() {
   return request<NexusAI.ProxyNode[]>({ url: '/admin/proxy-nodes' });
@@ -38,7 +38,7 @@ export function fetchProxyNodeEvents(id: string, limit = 50) {
   return request<NexusAI.ProxyNodeEvent[]>({ url: `/admin/proxy-nodes/${id}/events`, params: { limit } });
 }
 
-// ===== 模块管理 Modules（/admin/modules/status·一比一 Aether ModuleManagement） =====
+// ===== 模块管理 Modules（/admin/modules/status·ModuleManagement） =====
 
 export function fetchModuleStatus() {
   return request<NexusAI.ModuleStatus[]>({ url: '/admin/modules/status' });
@@ -68,7 +68,7 @@ export function saveModuleOrder(order: string[]) {
   return request({ url: '/admin/modules/order', method: 'put', data: order });
 }
 
-// ===== 系统设置 System（/admin/system·一比一 Aether SystemSettings） =====
+// ===== 系统设置 System（/admin/system·SystemSettings） =====
 
 export function fetchSystemConfigs() {
   return request<Record<string, unknown>>({ url: '/admin/system/configs' });
@@ -104,7 +104,7 @@ export function purgeSystemData(target: string) {
   return request<{ target: string; deleted: number }>({ url: `/admin/system/purge/${target}`, method: 'post' });
 }
 
-// ===== 邮件配置 Email（/admin/email·一比一 Aether EmailSettings·仅 SMTP 段） =====
+// ===== 邮件配置 Email（/admin/email·EmailSettings·仅 SMTP 段） =====
 
 export function fetchEmailConfig() {
   return request<NexusAI.EmailConfig>({ url: '/admin/email/config' });
@@ -122,7 +122,7 @@ export function testEmailSend(to: string) {
   return request<{ message: string }>({ url: '/admin/email/test-send', method: 'post', data: { to } });
 }
 
-// ===== IP 安全（/admin/ip-security·一比一 Aether IPSecurity） =====
+// ===== IP 安全（/admin/ip-security·IPSecurity） =====
 
 export function fetchIpBlacklist() {
   return request<NexusAI.IpBlacklistEntry[]>({ url: '/admin/ip-security/blacklist' });
@@ -148,7 +148,7 @@ export function removeIpWhitelist(ip: string) {
   return request({ url: '/admin/ip-security/whitelist', method: 'delete', params: { ip } });
 }
 
-// ===== 审计日志（/admin/audit-logs·一比一 Aether AuditLogs） =====
+// ===== 审计日志（/admin/audit-logs·AuditLogs） =====
 
 export function fetchAuditLogs(params: {
   actor?: string;
@@ -164,7 +164,7 @@ export function fetchAuditEventTypes() {
   return request<string[]>({ url: '/admin/audit-logs/event-types' });
 }
 
-// ===== 通知服务（/admin/notifications·一比一 Aether ImportantNotification 独立页） =====
+// ===== 通知服务（/admin/notifications·ImportantNotification 独立页） =====
 
 export function fetchNotificationConfig() {
   return request<NexusAI.NotificationConfig>({ url: '/admin/notifications/config' });

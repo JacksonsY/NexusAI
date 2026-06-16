@@ -5,9 +5,9 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import { fetchNotificationConfig, saveNotificationConfig, testNotification } from '@/service/api';
 
 /**
- * 通知服务（内置工具·一比一 Aether ImportantNotification 独立页）：
+ * 通知服务（内置工具·ImportantNotification 独立页）：
  * 全局推送服务 + 总开关 + 三通道就绪状态（邮件/Server酱/Bark）+ 通知项（开关/通道/模板）+ 测试发送。
- * 裁剪边界：Aether 的"用户邮件"开关挂终端用户体系——网关只发管理员收件人，不做。
+ * 裁剪边界： 的"用户邮件"开关挂终端用户体系——网关只发管理员收件人，不做。
  */
 defineOptions({ name: 'NotificationService' });
 

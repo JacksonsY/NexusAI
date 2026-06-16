@@ -5,7 +5,7 @@ import { fetchCancelTask, fetchChannels, fetchTaskDetail, fetchTaskStats, fetchT
 
 defineOptions({ name: 'AsyncTasks' });
 
-// ===== 异步任务（多模态生成任务·借鉴 Aether AsyncTasks）=====
+// ===== 异步任务（多模态生成任务·AsyncTasks）=====
 // 列表/统计 + 详情抽屉自动刷新 + 取消任务（后端 markFailed 幂等终态闸门·自动退冻结 USD）。
 
 const loading = ref(false);
@@ -150,7 +150,7 @@ function onPageSizeChange(size: number) {
   load();
 }
 
-// ===== 自动刷新（Aether 同款：有进行中任务且页面可见时 5 秒轮询）=====
+// ===== 自动刷新（同款：有进行中任务且页面可见时 5 秒轮询）=====
 const AUTO_REFRESH_INTERVAL = 5000;
 const isPageVisible = ref(true);
 let listTimer: ReturnType<typeof setInterval> | null = null;
@@ -395,7 +395,7 @@ onBeforeUnmount(() => {
 
 <template>
   <NSpace vertical :size="16">
-    <!-- 顶部统计卡（Aether 同款 4 卡） -->
+    <!-- 顶部统计卡（同款 4 卡） -->
     <NGrid :cols="4" :x-gap="16" responsive="screen" item-responsive>
       <NGridItem span="4 m:2 l:1">
         <NCard :bordered="false" size="small" class="card-wrapper">
@@ -509,7 +509,7 @@ onBeforeUnmount(() => {
       </div>
     </NCard>
 
-    <!-- 任务详情抽屉（Aether 同款：固定头 + 滚动内容 + 自动刷新 + 取消） -->
+    <!-- 任务详情抽屉（同款：固定头 + 滚动内容 + 自动刷新 + 取消） -->
     <NDrawer v-model:show="showDetail" :width="560">
       <NDrawerContent closable>
         <template #header>

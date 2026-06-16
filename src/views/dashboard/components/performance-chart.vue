@@ -1,4 +1,4 @@
-<!-- 性能多曲线面积图（一比一 axonhub PerformanceChart）：逐日每模型/渠道一条渐变面积曲线 ·
+<!-- 性能多曲线面积图（PerformanceChart）：逐日每模型/渠道一条渐变面积曲线 ·
      右上 tok/s|TTFT 迷你切换 · Y 轴 P90 自适应封顶(吞吐1000/TTFT 60s) · 缺数日记 0 ·
      下方可点击图例按钮（加权均值·点击 solo 单条） -->
 <script setup lang="ts">
@@ -25,10 +25,10 @@ const theme = useThemeVars();
 
 type Mode = 'throughput' | 'ttft';
 const mode = ref<Mode>('throughput');
-/** solo：点击图例按钮只看单条（axonhub activeSeries）。 */
+/** solo：点击图例按钮只看单条（activeSeries）。 */
 const activeId = ref<string | null>(null);
 
-// axonhub MAX_CHART_THROUGHPUT / MAX_CHART_TTFT_MS：极端值封顶防一条曲线压扁全图
+// MAX_CHART_THROUGHPUT / MAX_CHART_TTFT_MS：极端值封顶防一条曲线压扁全图
 const CAP = { throughput: 1000, ttft: 60000 } as const;
 
 const dates = computed(() => [...new Set(props.rows.map(r => r.date))].sort());
@@ -44,7 +44,7 @@ const statsMap = computed(() => {
 
 const colorOf = (id: string) => DIM_COLORS[Math.max(ids.value.indexOf(id), 0) % DIM_COLORS.length];
 
-/** 图例按钮（请求量加权均值·按名称排序——一比一 axonhub legendItems）。 */
+/** 图例按钮（请求量加权均值·按名称排序——legendItems）。 */
 const legendItems = computed(() =>
   ids.value
     .map(id => {
@@ -57,7 +57,7 @@ const legendItems = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name))
 );
 
-/** hex → rgba（面积渐变 0.3→0，照抄 axonhub linearGradient stop）。 */
+/** hex → rgba（面积渐变 0.3→0，照抄 linearGradient stop）。 */
 function hexA(hex: string, alpha: number) {
   const h = hex.replace('#', '');
   const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
@@ -65,7 +65,7 @@ function hexA(hex: string, alpha: number) {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
-/** Y 轴上限（照抄 axonhub）：吞吐取 P90×1.1（样本>10）否则最大×1.1，下限 10；TTFT 取最大×1.1，下限 100；再按 CAP 封顶。 */
+/** Y 轴上限（照抄 ）：吞吐取 P90×1.1（样本>10）否则最大×1.1，下限 10；TTFT 取最大×1.1，下限 100；再按 CAP 封顶。 */
 function yMax(m: Mode) {
   if (m === 'throughput') {
     const vals = props.rows.map(r => r.throughput).filter(v => v > 0).sort((a, b) => a - b);
@@ -99,7 +99,7 @@ function buildOption(opts: Record<string, any>) {
     splitLine: b.splitLine,
     axisLabel: { ...b.axis.axisLabel, formatter: fmt }
   };
-  // tooltip 一比一 axonhub：标题日期 + 每条目（圆点 名称 / 原始未封顶值），吞吐降序·TTFT 升序，0 值条目隐藏
+  // tooltip ：标题日期 + 每条目（圆点 名称 / 原始未封顶值），吞吐降序·TTFT 升序，0 值条目隐藏
   opts.tooltip = {
     trigger: 'axis',
     textStyle: { fontSize: 12 },
@@ -126,7 +126,7 @@ function buildOption(opts: Record<string, any>) {
       return `<div style="font-weight:500;margin-bottom:2px">${date.slice(5).replace('-', '/')}</div>${lines}`;
     }
   };
-  // 每 id 一条渐变面积曲线（缺数日记 0·封顶 CAP——一比一 axonhub capped dataKey）
+  // 每 id 一条渐变面积曲线（缺数日记 0·封顶 CAP——capped dataKey）
   opts.series = visible.map(id => {
     const color = colorOf(id);
     return {
@@ -176,7 +176,7 @@ function toggleSolo(id: string) {
 
 <template>
   <div>
-    <!-- 右上 tok/s | TTFT 切换（一比一 axonhub mini Tabs） -->
+    <!-- 右上 tok/s | TTFT 切换（mini Tabs） -->
     <div class="mb-12px flex items-center justify-end">
       <div class="inline-flex shrink-0 items-center rounded-8px p-2px" :style="{ background: theme.actionColor }">
         <button
@@ -200,7 +200,7 @@ function toggleSolo(id: string) {
     </div>
     <div v-show="rows.length" ref="domRef" class="h-350px w-full" />
 
-    <!-- 图例按钮列表（一比一 axonhub：点击 solo·加权均值 tok/s + TTFT） -->
+    <!-- 图例按钮列表（点击 solo·加权均值 tok/s + TTFT） -->
     <div class="mt-16px grid gap-8px sm:grid-cols-2 lg:grid-cols-3">
       <button
         v-for="it in legendItems"

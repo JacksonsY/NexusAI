@@ -16,7 +16,7 @@ import {
 import TtlAnalysisCard from './modules/ttl-analysis-card.vue';
 
 /**
- * 缓存监控（一比一 Aether CacheMonitoring·项目制）：
+ * 缓存监控（CacheMonitoring·项目制）：
  * 标题 → 4 统计卡（活跃亲和性/Provider 切换/缓存失效/预留比例）→ 亲和性列表（搜索/图标钮/秒级倒计时）→
  * 模型映射缓存（全局模型→映射模型→提供商）→ Redis 缓存管理 → TTL 分析。
  */

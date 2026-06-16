@@ -9,7 +9,7 @@ import ProviderPerfCard from './modules/provider-perf-card.vue';
 
 defineOptions({ name: 'Performance' });
 
-/** 性能分析（一比一 Aether PerformanceAnalysis）：实时区 10s 轮询 + 历史区窗口可选（筛选防抖）。 */
+/** 性能分析（PerformanceAnalysis）：实时区 10s 轮询 + 历史区窗口可选（筛选防抖）。 */
 const LIVE_REFRESH_INTERVAL_MS = 10_000;
 const DEFAULT_SLOW_THRESHOLD_MS = 10_000;
 
@@ -163,7 +163,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex-col gap-16px pb-16px">
-    <!-- 页头（一比一 Aether：标题 + 实时刷新标识 + 上次更新 + 刷新 + 窗口选择） -->
+    <!-- 页头（标题 + 实时刷新标识 + 上次更新 + 刷新 + 窗口选择） -->
     <div class="flex flex-col gap-12px xl:flex-row xl:items-center xl:justify-between">
       <div>
         <h1 class="m-0 text-18px font-semibold">性能分析</h1>

@@ -58,7 +58,7 @@ async function submit() {
     projectCode: props.project.projectCode,
     op: op.value,
     usd: usd.value,
-    requestId: `console-${crypto.randomUUID()}`   // 幂等去重（契约③ M11）
+    requestId: `console-${crypto.randomUUID()}` // 幂等去重（契约③ M11）
   });
   submitting.value = false;
   if (!error) {

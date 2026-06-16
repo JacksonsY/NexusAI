@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { NTag } from 'naive-ui';
 
 /**
- * 对话视图（一比一 Aether ConversationView 清洁室实现）：把 LLM 请求/响应体渲染成
+ * 对话视图（ConversationView 清洁室实现）：把 LLM 请求/响应体渲染成
  * 角色气泡——system/user/assistant/tool 各色；content 兼容 OpenAI 字符串与
  * Anthropic/OpenAI 分块数组（text/image/tool_use/tool_result 块），工具与图片显示占位标签。
  */

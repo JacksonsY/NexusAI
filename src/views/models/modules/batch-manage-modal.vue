@@ -36,7 +36,7 @@ const filtered = computed(() => {
   return models.value.filter(r => `${r.model.modelKey} ${r.model.modelAlias ?? ''}`.toLowerCase().includes(q));
 });
 
-/** 快捷选中（Aether batchManageShortcuts 五件套）。 */
+/** 快捷选中（batchManageShortcuts 五件套）。 */
 const shortcuts = computed(() => {
   const defs: { label: string; description: string; filter: (r: NexusAI.ModelRow) => boolean }[] = [
     { label: '无提供商', description: '没有关联任何提供商的模型', filter: r => (num(r.channelCount) ?? 0) === 0 },

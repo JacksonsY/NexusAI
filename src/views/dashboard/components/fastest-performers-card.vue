@@ -1,4 +1,4 @@
-<!-- 最快榜卡（一比一 axonhub FastestPerformersCard）：自治时段(月/周/日·默认月) ·
+<!-- 最快榜卡（FastestPerformersCard）：自治时段(月/周/日·默认月) ·
      横向柱(柱长=吞吐 tokens/s·Top5 异色) + 单列序号图例(主值 tok/s·次值请求数) -->
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
@@ -36,7 +36,7 @@ async function load() {
 watch(window, load);
 onMounted(load);
 
-/** 榜单行（一比一 axonhub：吞吐降序 Top5·色板按显示索引）。 */
+/** 榜单行（吞吐降序 Top5·色板按显示索引）。 */
 const items = computed(() =>
   rows.value
     .slice(0, 5)
@@ -72,7 +72,7 @@ const { domRef, updateOptions } = useEcharts(() => ({
     }
   },
   grid: { left: 20, right: 24, top: 10, bottom: 10 },
-  // axonhub HorizontalBarChart：X 数值轴隐藏·Y 名称轴隐藏（靠下方序号图例对应）·首位在顶
+  // HorizontalBarChart：X 数值轴隐藏·Y 名称轴隐藏（靠下方序号图例对应）·首位在顶
   xAxis: { type: 'value', show: false },
   yAxis: { type: 'category', data: [] as string[], inverse: true, show: false },
   series: [

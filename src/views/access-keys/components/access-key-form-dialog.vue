@@ -14,7 +14,7 @@ const emit = defineEmits<{
 }>();
 const show = defineModel<boolean>('show', { default: false });
 
-// 端点（协议入口）固定选项 —— 一比一 Aether「允许的端点」
+// 端点（协议入口）固定选项 —— 「允许的端点」
 const apiFormatOptions = [
   { label: 'OpenAI', value: 'openai' },
   { label: 'Anthropic', value: 'anthropic' },
@@ -153,7 +153,7 @@ watch(show, v => {
   }
 });
 
-// 清空过期日期（同时清空到期删除·一比一 Aether clearExpiryDate）
+// 清空过期日期（同时清空到期删除·clearExpiryDate）
 function clearExpiry() {
   form.expiresAt = null;
   form.autoDeleteOnExpiry = false;
@@ -239,7 +239,7 @@ function submit() {
           <NInput v-model:value="form.name" maxlength="100" placeholder="例如: 用户A专用" />
         </div>
 
-        <!-- 有效期设置（date + 到期删除 + 说明）一比一 Aether -->
+        <!-- 有效期设置（date + 到期删除 + 说明）-->
         <div>
           <div class="mb-4px text-13px font-medium">有效期设置</div>
           <div class="flex items-center gap-8px">
@@ -253,7 +253,7 @@ function submit() {
           </div>
         </div>
 
-        <!-- 额度（子限额 + 无限额 Switch）映射 Aether 初始余额 -->
+        <!-- 额度（子限额 + 无限额 Switch）映射 初始余额 -->
         <div>
           <div class="mb-4px text-13px font-medium">额度（子限额 USD $）</div>
           <div class="flex items-center gap-12px">
@@ -282,7 +282,7 @@ function submit() {
           <div class="mt-4px text-12px op-55">留空表示不限制；支持 IP、IPv4 CIDR，多个规则用英文逗号分隔</div>
         </div>
 
-        <!-- 敏感信息保护卡片 一比一 Aether -->
+        <!-- 敏感信息保护卡片 -->
         <div class="flex flex-col gap-8px rounded-8px border border-[var(--n-border-color)] bg-[var(--n-color-embedded)] p-12px">
           <div class="flex items-center justify-between">
             <span class="text-13px font-medium">敏感信息保护</span>

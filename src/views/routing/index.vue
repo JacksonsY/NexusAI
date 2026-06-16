@@ -13,7 +13,7 @@ import PolicyModePicker from './modules/policy-mode-picker.vue';
 defineOptions({ name: 'Routing' });
 
 /**
- * 调度策略页（一比一借鉴 Aether RoutingProfiles）：左策略分组列表 + 右详情编辑器。
+ * 调度策略页（一比一RoutingProfiles）：左策略分组列表 + 右详情编辑器。
  * 策略 = 优先级模式(provider/key) × 调度策略(cache_affinity/load_balance/fixed_order)，
  * 统一调度作用全部模型；区分模型时可对单个模型覆盖。系统默认且启用的策略驱动运行时选路。
  */
@@ -165,7 +165,7 @@ const canSaveDraft = computed(() => !!draft.value?.name.trim() && !saving.value)
 function buildConfigJson(d: Draft): string {
   return JSON.stringify({
     defaultPolicy: d.defaultPolicy,
-    // 统一调度维度下保存即清空模型覆盖（与 Aether removeGeneratedModelSchedulingRules 同语义）
+    // 统一调度维度下保存即清空模型覆盖（与 removeGeneratedModelSchedulingRules 同语义）
     modelPolicies: sortingScope.value === 'per_model' ? d.modelPolicies : []
   });
 }

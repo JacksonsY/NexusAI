@@ -6,7 +6,7 @@ import ProtocolHealthCard from './modules/protocol-health-card.vue';
 
 defineOptions({ name: 'HealthPage' });
 
-/** 健康监控（一级菜单单页·一比一 Aether HealthMonitor）：端点/模型/渠道三 Tab，访问过的 Tab 懒挂载后保留。 */
+/** 健康监控（一级菜单单页·HealthMonitor）：端点/模型/渠道三 Tab，访问过的 Tab 懒挂载后保留。 */
 const activeTab = ref('endpoint');
 const visitedTabs = ref<Record<string, boolean>>({ endpoint: true });
 

@@ -1,6 +1,6 @@
 import { request } from '../request';
 
-// ===== 异步任务 Tasks（全局视图·借鉴 Aether /api/admin/tasks）=====
+// ===== 异步任务 Tasks（全局视图·/api/admin/tasks）=====
 export function fetchTasks(params: {
   pageNum?: number;
   pageSize?: number;

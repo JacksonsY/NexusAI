@@ -1,4 +1,4 @@
-<!-- 维度请求量 Top 柱图（一比一 axonhub RequestsByChannelChart·去 cost）：每柱异色·X 轴 hide 靠下方序号图例对应 -->
+<!-- 维度请求量 Top 柱图（RequestsByChannelChart·去 cost）：每柱异色·X 轴 hide 靠下方序号图例对应 -->
 <script setup lang="ts">
 import { watch } from 'vue';
 import { useEcharts } from '@/hooks/common/echarts';
@@ -27,7 +27,7 @@ const { domRef, updateOptions } = useEcharts(() => {
       }
     },
     grid: { left: 48, right: 16, top: 16, bottom: 8 },
-    // axonhub：<XAxis dataKey='name' hide /> —— 隐藏渠道名，靠卡片下方 ChartLegend 序号 + 圆点对应
+    // ：<XAxis dataKey='name' hide /> —— 隐藏渠道名，靠卡片下方 ChartLegend 序号 + 圆点对应
     xAxis: { type: 'category', data: [] as string[], show: false },
     yAxis: {
       ...b.axis,

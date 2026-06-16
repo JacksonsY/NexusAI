@@ -1,5 +1,5 @@
 /**
- * 健康监控共享判定/格式化（三卡片共用·口径一比一 Aether catalog_helpers + 卡片组件）。
+ * 健康监控共享判定/格式化（三卡片共用·口径catalog_helpers + 卡片组件）。
  * 后端 Long 全局序列化为字符串（防 JS 精度丢失），计数/毫秒字段入口一律 Number() 归一。
  */
 
@@ -39,7 +39,7 @@ export function successRateClass(rate: number) {
   return 'text-red-600 dark:text-red-400';
 }
 
-/** 毫秒人话：<1s → ms，<60s → s，其余 min（一比一 Aether formatMs）。 */
+/** 毫秒人话：<1s → ms，<60s → s，其余 min（formatMs）。 */
 export function formatMs(value?: number | string | null) {
   const n = num(value);
   if (n === null) return '-';

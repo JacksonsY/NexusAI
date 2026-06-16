@@ -56,7 +56,7 @@ declare module 'vue-router' {
      * The route is not in the menu
      *
      * @example
-     *   the route is "user_detail", if it is set to "user_list", the menu "user_list" will be activated
+     * the route is "user_detail", if it is set to "user_list", the menu "user_list" will be activated
      */
     activeMenu?: import('@elegant-router/types').RouteKey | null;
     /**

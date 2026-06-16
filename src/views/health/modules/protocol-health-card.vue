@@ -25,7 +25,7 @@ async function loadData() {
   }
 }
 
-/** 协议族展示名（OpenAI / Anthropic / Gemini…·对齐 Aether api_format_display_name 心法）。 */
+/** 协议族展示名（OpenAI / Anthropic / Gemini…·api_format_display_name 心法）。 */
 function protocolLabel(protocol: string) {
   const known: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic', gemini: 'Gemini' };
   return known[protocol] ?? protocol;

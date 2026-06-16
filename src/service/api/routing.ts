@@ -20,7 +20,7 @@ export function fetchUpdateScheduling(data: { schedulingMode?: string; priorityM
   return request<void>({ url: '/admin/routing/scheduling', method: 'put', data });
 }
 
-// ===== 调度策略分组 RoutingGroups（调度策略页·借鉴 Aether routing_groups）=====
+// ===== 调度策略分组 RoutingGroups（调度策略页·routing_groups）=====
 export function fetchRoutingGroups() {
   return request<NexusAI.RoutingGroup[]>({ url: '/admin/routing/groups' });
 }

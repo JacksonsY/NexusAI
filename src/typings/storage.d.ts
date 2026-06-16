@@ -4,8 +4,8 @@ declare namespace StorageType {
     /** The theme color */
     themeColor: string;
     // /**
-    //  * the theme settings
-    //  */
+    // * the theme settings
+    // */
     // themeSettings: App.Theme.ThemeSetting;
   }
 

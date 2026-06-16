@@ -7,7 +7,7 @@ import UpstreamModelsModal from './upstream-models-modal.vue';
 
 defineOptions({ name: 'ChannelDetailDrawer' });
 
-/** 渠道详情抽屉（借鉴 Aether ProviderDetailDrawer 心智·渠道密钥视角）：概览(含 Key 指纹) / 模型路由 / 覆盖配置。 */
+/** 渠道详情抽屉（ProviderDetailDrawer 心智·渠道密钥视角）：概览(含 Key 指纹) / 模型路由 / 覆盖配置。 */
 const props = defineProps<{
   summary: NexusAI.ChannelSummary | null;
 }>();
@@ -17,7 +17,7 @@ const emit = defineEmits<{ refresh: []; edit: [row: NexusAI.Channel] }>();
 
 const channel = computed(() => props.summary?.channel ?? null);
 const activeTab = ref('overview');
-/** 从上游拉取模型弹窗（new-api FetchUpstreamModels） */
+/** 从上游拉取模型弹窗（FetchUpstreamModels） */
 const upstreamShow = ref(false);
 const testing = ref(false);
 

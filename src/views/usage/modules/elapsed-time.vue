@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 /**
- * 进行中请求活计时（一比一 Aether ElapsedTimeText）：pending/streaming 状态下
+ * 进行中请求活计时（ElapsedTimeText）：pending/streaming 状态下
  * requestAnimationFrame 持续走秒；终态显示最终耗时；卸载/状态变化时清理。
  */
 defineOptions({ name: 'ElapsedTime' });

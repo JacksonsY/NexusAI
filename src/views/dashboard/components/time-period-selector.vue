@@ -1,4 +1,4 @@
-<!-- 时段选择器（一比一 axonhub TimePeriodSelector：迷你分段 h-7·选中 primary 反色·periods 可裁剪如最快榜只给 月/周/日） -->
+<!-- 时段选择器（TimePeriodSelector：迷你分段 h-7·选中 primary 反色·periods 可裁剪如最快榜只给 月/周/日） -->
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useThemeVars } from 'naive-ui';

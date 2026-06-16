@@ -1,12 +1,12 @@
 /**
- * dashboard 图表统一基础样式（对齐 axonhub recharts 观感）：
+ * dashboard 图表统一基础样式（recharts 观感）：
  * 12px 中灰轴标签/轴名/图例 + 淡虚线网格 + 隐藏刻度。中灰固定值在亮/暗底都可读，不随主题切换错乱。
  *
  * 用法：图表 option 工厂里 `const b = chartBase()`，把 `b.textStyle`/`b.axis`/`b.splitLine`/`b.legend`
  * 合并进 textStyle / xAxis / yAxis / legend。
  */
 /**
- * 维度图表统一色板（柱图 Cell 与序号图例圆点按同一索引取色，对齐 axonhub chart-1..6）。
+ * 维度图表统一色板（柱图 Cell 与序号图例圆点按同一索引取色，chart-1..6）。
  * 请求量柱 / 图例圆点 / 性能榜柱 共用，保证「第 N 根柱 = 图例第 N 项」颜色一致。
  */
 export const DIM_COLORS = ['#646cff', '#18a058', '#f0a020', '#d03050', '#2080f0', '#7c4dff', '#13c2c2', '#eb2f96', '#fa8c16', '#52c41a'];

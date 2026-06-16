@@ -1,13 +1,13 @@
 <script setup lang="ts">
 defineOptions({ name: 'MetricBox' });
 
-/** 指标小格（一比一 Aether MetricBox + new-api StatCard 的 hint）：标签 + 值，可选图标/值色/注脚。 */
+/** 指标小格（MetricBox + StatCard 的 hint）：标签 + 值，可选图标/值色/注脚。 */
 defineProps<{
   label: string;
   value: string;
   icon?: string;
   valueClass?: string;
-  /** 注脚（new-api StatCard hint·如 incidents 计数） */
+  /** 注脚（StatCard hint·如 incidents 计数） */
   hint?: string;
 }>();
 </script>

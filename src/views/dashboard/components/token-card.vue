@@ -1,4 +1,4 @@
-<!-- 词元统计卡（像素级复刻 axonhub TokenStatsCard：图标方块 + 全部/月/周/日 迷你分段 + 输入/输出/缓存三列竖线分隔） -->
+<!-- 词元统计卡（像素级复刻 TokenStatsCard：图标方块 + 全部/月/周/日 迷你分段 + 输入/输出/缓存三列竖线分隔） -->
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useThemeVars } from 'naive-ui';

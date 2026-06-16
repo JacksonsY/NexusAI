@@ -11,7 +11,7 @@ import {
 } from '@/service/api';
 
 /**
- * IP 安全（内置工具·一比一 Aether IPSecurity）：
+ * IP 安全（内置工具·IPSecurity）：
  * 黑名单（命中拒绝一切访问·支持 TTL 自动过期·Redis）+ 白名单（豁免黑名单·支持 CIDR·KV）。
  * 数据面 5s 本地快照判定——relay/admin 入口统一拦截。
  */

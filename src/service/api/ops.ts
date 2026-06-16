@@ -1,6 +1,6 @@
 import { request } from '../request';
 
-// ===== 缓存监控 Cache（/admin/cache·一比一 Aether CacheMonitoring） =====
+// ===== 缓存监控 Cache（/admin/cache·CacheMonitoring） =====
 export function fetchCacheStats() {
   return request<NexusAI.CacheStats>({ url: '/admin/cache' });
 }

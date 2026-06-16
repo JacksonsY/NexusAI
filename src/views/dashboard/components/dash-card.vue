@@ -1,4 +1,4 @@
-<!-- 精确复刻 axonhub shadcn Card（card.tsx: flex flex-col gap-6 rounded-xl border py-6 shadow-sm；--radius 0.75rem） -->
+<!-- 精确复刻 shadcn Card（card.tsx: flex flex-col gap-6 rounded-xl border py-6 shadow-sm；--radius 0.75rem） -->
 <script setup lang="ts">
 import { useThemeVars } from 'naive-ui';
 
@@ -26,7 +26,7 @@ const theme = useThemeVars();
   transition: all 0.2s ease;
 }
 
-/* 一比一 axonhub .hover-card:hover：scale(1.02) + shadow-md + 边框变主题色 */
+/* .hover-card:hover：scale(1.02) + shadow-md + 边框变主题色 */
 .dash-card:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgb(0 0 0 / 10%);

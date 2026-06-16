@@ -34,7 +34,7 @@ async function load() {
   loading.value = true;
   const { data: resp } = await fetchModelRouting(props.modelKey);
   data.value = resp ?? null;
-  // 默认展开全部协议组（Aether 初始展开第一组·组少全开更直观）
+  // 默认展开全部协议组（初始展开第一组·组少全开更直观）
   expandedProtocols.value = new Set((resp?.groups ?? []).map(g => g.protocol));
   loading.value = false;
 }

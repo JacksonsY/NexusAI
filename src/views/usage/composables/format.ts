@@ -14,7 +14,7 @@ export function fmtUsd(v: number | string | null | undefined): string {
   return `$${num(v).toFixed(6)}`;
 }
 
-/** token 量级缩写（一比一 Aether formatTokens：1.5K / 1.2M）。 */
+/** token 量级缩写（formatTokens：1.5K / 1.2M）。 */
 export function fmtTokens(v: number | string | null | undefined): string {
   const n = num(v);
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
@@ -28,13 +28,13 @@ export function fmtMs(v: number | string | null | undefined): string {
   return n >= 1000 ? `${(n / 1000).toFixed(2)}s` : `${n}ms`;
 }
 
-/** 缓存命中率（一比一 Aether formatHitRate：无数据显示 -）。 */
+/** 缓存命中率（formatHitRate：无数据显示 -）。 */
 export function fmtHitRate(rate: number | null | undefined): string {
   if (rate == null || Number.isNaN(rate)) return '-';
   return `${rate.toFixed(1)}%`;
 }
 
-/** 客户端家族标识 → 展示名（一比一 Aether formatClientFamily）。 */
+/** 客户端家族标识 → 展示名（formatClientFamily）。 */
 const CLIENT_FAMILY_LABELS: Record<string, string> = {
   codex: 'Codex',
   codex_vscode: 'Codex VS Code',

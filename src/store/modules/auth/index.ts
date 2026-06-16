@@ -126,7 +126,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     endLoading();
   }
 
-  /** nexusai：账号即超级管理员（无独立用户体系，用户/钱/账在 ruoyi）。 */
+  /** nexusai：账号即超级管理员（无独立用户体系，用户/钱/账在 业务面）。 */
   function setAdminUserInfo(name = 'admin') {
     Object.assign(userInfo, {
       userId: name,

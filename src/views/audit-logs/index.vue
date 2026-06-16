@@ -4,7 +4,7 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import { fetchAuditEventTypes, fetchAuditLogs } from '@/service/api';
 
 /**
- * 审计日志（内置工具·一比一 Aether AuditLogs）：
+ * 审计日志（内置工具·AuditLogs）：
  * 控制面写操作与登录成败的安全追踪——筛选（操作者/事件类型/时间范围）+ 表格 + 行详情 + CSV 导出。
  */
 defineOptions({ name: 'AuditLogs' });

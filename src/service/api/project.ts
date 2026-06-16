@@ -1,6 +1,6 @@
 import { request } from '../request';
 
-// ===== 项目 Projects（工作区 + 控制面集成边界·借鉴 axonhub Project） =====
+// ===== 项目 Projects（工作区 + 控制面集成边界·Project） =====
 export function fetchProjects() {
   return request<NexusAI.Project[]>({ url: '/admin/projects' });
 }

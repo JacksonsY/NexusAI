@@ -4,7 +4,7 @@ import { NTag } from 'naive-ui';
 import { fetchProxyNodeEvents, fetchProxyNodeMetrics } from '@/service/api';
 
 /**
- * 节点数据展开面板（一比一 Aether ProxyNodeDataPanel·手动节点适配）：
+ * 节点数据展开面板（ProxyNodeDataPanel·手动节点适配）：
  * 24h 汇总格 + 在线率采样条形（1h 桶·颜色随在线率/错误）+ 最近事件 + 实时快照。
  */
 defineOptions({ name: 'NodeDataPanel' });

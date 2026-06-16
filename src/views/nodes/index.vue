@@ -6,7 +6,7 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import { fetchNodes, removeNode } from '@/service/api';
 
 /**
- * 集群节点（snail-job server node 集群视图对位）：汇总卡（节点数/在线/当前 leader/在途请求/熔断态真理源）
+ * 集群节点（server node 集群视图对位）：汇总卡（节点数/在线/当前 leader/在途请求/熔断态真理源）
  * → 节点表格（心跳三档状态/leader 徽章/运行时快照 CPU·堆·在途请求/手动剔除）→ 行展开运行时详情。
  * 10s 自动刷新（心跳周期 15s）。
  */

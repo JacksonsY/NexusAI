@@ -1,4 +1,4 @@
-<!-- 渠道成功率列表（一比一 axonhub ChannelSuccessRate：Activity 方块图标 + 渠道名 + ✓✗ 计数 + 成功率） -->
+<!-- 渠道成功率列表（ChannelSuccessRate：Activity 方块图标 + 渠道名 + ✓✗ 计数 + 成功率） -->
 <script setup lang="ts">
 import { useThemeVars } from 'naive-ui';
 import { formatCompact } from '../composables/use-dashboard';

@@ -1,4 +1,4 @@
-<!-- 每日概览图（一比一 axonhub DailyRequestStats：请求量左轴 primary + Token 右轴·渐变面积·去钱化无 cost 轴） -->
+<!-- 每日概览图（DailyRequestStats：请求量左轴 primary + Token 右轴·渐变面积·去钱化无 cost 轴） -->
 <script setup lang="ts">
 import { watch } from 'vue';
 import { useThemeVars } from 'naive-ui';
@@ -94,7 +94,7 @@ watch(
   () => {
     const rows = props.rows ?? [];
     updateOptions(opts => {
-      opts.xAxis.data = rows.map(r => (r.date ?? '').slice(5).replace('-', '/')); // MM/DD（对齐 axonhub toLocaleDateString）
+      opts.xAxis.data = rows.map(r => (r.date ?? '').slice(5).replace('-', '/')); // MM/DD（toLocaleDateString）
       opts.series[0].data = rows.map(r => Number(r.total ?? 0));
       opts.series[1].data = rows.map(r => Number(r.totalTokens ?? 0));
       return opts;

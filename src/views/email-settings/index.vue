@@ -4,9 +4,9 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import { fetchEmailConfig, saveEmailConfig, testEmailConnection, testEmailSend } from '@/service/api';
 
 /**
- * 邮件配置（内置工具·一比一 Aether EmailSettings 的 SMTP 段）：
+ * 邮件配置（内置工具·EmailSettings 的 SMTP 段）：
  * SMTP 服务配置（密码 AES 加密·回显仅"已设置"占位）+ 测试连接 + 发送测试邮件。
- * 裁剪边界：Aether 的"注册邮箱验证"段为登录业务（网关无终端用户体系）——不做。
+ * 裁剪边界： 的"注册邮箱验证"段为登录业务（网关无终端用户体系）——不做。
  */
 defineOptions({ name: 'EmailSettings' });
 

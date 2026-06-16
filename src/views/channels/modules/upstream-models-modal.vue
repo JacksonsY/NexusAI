@@ -4,7 +4,7 @@ import { fetchChannelUpstreamModels, fetchRegisterUpstreamModels } from '@/servi
 
 defineOptions({ name: 'UpstreamModelsModal' });
 
-/** 从上游拉取模型弹窗（new-api FetchUpstreamModels）：GET {baseUrl}/models → 勾选未注册的批量建 ability。 */
+/** 从上游拉取模型弹窗（FetchUpstreamModels）：GET {baseUrl}/models → 勾选未注册的批量建 ability。 */
 const props = defineProps<{
   channelId: number | null;
   channelName?: string;

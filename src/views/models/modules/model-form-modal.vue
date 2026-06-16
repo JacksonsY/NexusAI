@@ -18,7 +18,7 @@ const isEdit = computed(() => Boolean(props.model?.id));
 const form = ref<NexusAI.Model>({});
 const submitting = ref(false);
 
-// ===== 左侧 models.dev 目录树（仅创建模式·Aether GlobalModelFormDialog 左栏） =====
+// ===== 左侧 models.dev 目录树（仅创建模式·GlobalModelFormDialog 左栏） =====
 interface DevItem {
   providerId: string;
   providerName: string;
@@ -67,7 +67,7 @@ async function loadCatalog() {
       });
     });
   });
-  // provider 名排序，组内按发布日期新→旧（Aether 同序）
+  // provider 名排序，组内按发布日期新→旧（同序）
   items.sort((a, b) => {
     const p = a.providerName.localeCompare(b.providerName);
     if (p !== 0) return p;
@@ -86,7 +86,7 @@ interface ProviderGroup {
   models: DevItem[];
 }
 
-/** 无搜索词只显示官方提供商（数据无 official 标记时显示全部）；有词搜全部（多关键词 AND·Aether 同策略）。 */
+/** 无搜索词只显示官方提供商（数据无 official 标记时显示全部）；有词搜全部（多关键词 AND· 同策略）。 */
 const groupedModels = computed<ProviderGroup[]>(() => {
   const query = treeSearch.value.trim().toLowerCase();
   const keywords = query.split(/\s+/).filter(Boolean);
@@ -107,7 +107,7 @@ const groupedModels = computed<ProviderGroup[]>(() => {
     groups.get(item.providerId)!.models.push(item);
   }
   const result = [...groups.values()];
-  // 搜索词命中 provider 名的组排前（Aether 同策略），其余按名称
+  // 搜索词命中 provider 名的组排前（同策略），其余按名称
   result.sort((a, b) => {
     if (keywords.length > 0) {
       const aText = `${a.providerId} ${a.providerName}`.toLowerCase();
@@ -138,7 +138,7 @@ function hideLogo(e: Event) {
   (e.target as HTMLImageElement).style.display = 'none';
 }
 
-/** 点选目录模型 → 自动填充表单（modelKey/别名/上下文/输出上限/费率·Aether selectModel）。 */
+/** 点选目录模型 → 自动填充表单（modelKey/别名/上下文/输出上限/费率·selectModel）。 */
 function selectItem(item: DevItem) {
   selectedItem.value = item;
   expandedProvider.value = item.providerId;
@@ -189,7 +189,7 @@ async function submit() {
     if (isEdit.value) {
       show.value = false;
     } else {
-      // 创建模式保持打开以便连续添加（Aether 行为）
+      // 创建模式保持打开以便连续添加（行为）
       clearSelection();
     }
   }

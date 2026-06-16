@@ -16,7 +16,7 @@ import {
 import NodeDataPanel from './modules/node-data-panel.vue';
 
 /**
- * 代理节点（一比一 Aether ProxyNodes·手动 HTTP/SOCKS5 出口代理）：
+ * 代理节点（ProxyNodes·手动 HTTP/SOCKS5 出口代理）：
  * 标题栏（搜索/状态筛选/手动添加/刷新）→ 表格（展开数据面板/测试/编辑/事件/删除）→
  * 添加对话框（手动/批量两模式·测试连通性）→ 连接事件对话框。
  */
@@ -112,7 +112,7 @@ interface BatchNode {
   password?: string;
 }
 
-/** 批量解析（一比一 Aether proxy-node-batch：行/逗号分隔·URL 内嵌账密自动拆分·名称=主机:端口） */
+/** 批量解析（proxy-node-batch：行/逗号分隔·URL 内嵌账密自动拆分·名称=主机:端口） */
 const batchParsed = computed<{ nodes: BatchNode[]; errors: string[] }>(() => {
   const entries = batchContent.value
     .split(/[\n,]+/)
@@ -399,7 +399,7 @@ onMounted(refresh);
 <template>
   <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
     <NCard :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
-      <!-- 标题和筛选器（一比一 Aether 顶栏） -->
+      <!-- 标题和筛选器（顶栏） -->
       <div class="mb-12px flex flex-wrap items-center justify-between gap-12px">
         <span class="text-base font-semibold">代理节点</span>
         <div class="flex flex-wrap items-center gap-8px">
@@ -449,7 +449,7 @@ onMounted(refresh);
       </NDataTable>
     </NCard>
 
-    <!-- 添加/编辑对话框（一比一 Aether·手动/批量两模式） -->
+    <!-- 添加/编辑对话框（手动/批量两模式） -->
     <NModal
       v-model:show="showAddModal"
       preset="card"

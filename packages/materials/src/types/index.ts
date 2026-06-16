@@ -172,10 +172,10 @@ export interface AdminLayoutProps
    * It can be used to get the corresponding Dom and scroll it
    *
    * @example
-   *   use the default id by import
-   *   ```ts
-   *   import { adminLayoutScrollElId } from '@sa/vue-materials';
-   *   ```
+   * use the default id by import
+   * ```ts
+   * import { adminLayoutScrollElId } from '@sa/vue-materials';
+   * ```
    *
    * @default
    * ```ts

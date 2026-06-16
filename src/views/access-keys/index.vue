@@ -62,7 +62,7 @@ function refreshAccessKeys() {
   loadAccessKeys();
 }
 
-// 一比一 Aether：搜索（空格分隔多关键词 AND·域=name+keyHash+project）+ 状态前端过滤
+// ：搜索（空格分隔多关键词 AND·域=name+keyHash+project）+ 状态前端过滤
 const displayRows = computed(() => {
   let list = rows.value;
   const kw = searchQuery.value.trim().toLowerCase();
@@ -173,7 +173,7 @@ function showNewKey(key: string, title: string) {
   newKeyVisible.value = true;
 }
 
-// ===== 额度抽屉（DollarSign·一比一 Aether WalletOpsDrawer 语义映射为子限额+项目池）=====
+// ===== 额度抽屉（DollarSign·WalletOpsDrawer 语义映射为子限额+项目池）=====
 const quotaDrawerVisible = ref(false);
 const quotaTarget = ref<NexusAI.AccessKey | null>(null);
 function openAddBalanceDialog(row: NexusAI.AccessKey) {
@@ -221,7 +221,7 @@ async function deleteAccessKey(row: NexusAI.AccessKey) {
   }
 }
 
-// 访问限制 chips（一比一 Aether：模型/渠道/协议/IP/PII）
+// 访问限制 chips（模型/渠道/协议/IP/PII）
 function accessChips(r: NexusAI.AccessKey) {
   const chips: string[] = [];
   if (r.modelLimits) chips.push('模型');
@@ -236,7 +236,7 @@ function accessChips(r: NexusAI.AccessKey) {
   return chips;
 }
 
-// ===== 桌面 8 列（一比一 Aether AccessKeys）=====
+// ===== 桌面 8 列（AccessKeys）=====
 const columns: DataTableColumns<NexusAI.AccessKey> = [
   {
     title: '密钥信息',
@@ -447,7 +447,7 @@ onMounted(() => {
         独立密钥（standalone sk-）由控制台自管，挂项目计费、扣项目池/工作区额度，明文只在创建或轮转后显示一次。
       </NText>
 
-      <!-- 桌面：8 列表格（一比一 Aether） -->
+      <!-- 桌面：8 列表格 -->
       <div class="hidden xl:block">
         <NDataTable
           :columns="columns"
@@ -460,7 +460,7 @@ onMounted(() => {
         />
       </div>
 
-      <!-- 移动/窄屏：卡片列表（一比一 Aether <xl 卡片） -->
+      <!-- 移动/窄屏：卡片列表（<xl 卡片） -->
       <div class="flex flex-col gap-10px xl:hidden">
         <div v-for="r in displayRows" :key="r.id" class="border border-[var(--n-border-color)] rounded-8px p-12px">
           <div class="flex items-center justify-between">

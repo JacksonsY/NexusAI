@@ -1,4 +1,4 @@
-/** nexusai 网关控制台业务类型聚合（declare namespace NexusAI·ambient 全局·无需 import）。对齐 snail-ai-admin typings/api/extra.d.ts 单文件风格。 */
+/** nexusai 网关控制台业务类型聚合（declare namespace NexusAI·ambient 全局·无需 import）。单文件聚合风格。 */
 
 /** nexusai 控制台领域类型 · 渠道域（提供商/上游凭证/连通性测试·对接 /admin/channels|channel-keys）。 */
 declare namespace NexusAI {
@@ -24,7 +24,7 @@ declare namespace NexusAI {
     headerOverride?: string;
     paramOverride?: string;
     setting?: string;
-    /** 计费类型（Aether billing_type）：monthly_quota / pay_as_you_go / free_tier */
+    /** 计费类型（billing_type）：monthly_quota / pay_as_you_go / free_tier */
     billingType?: string;
     /** 月卡周期额度 USD */
     quotaUsd?: number | string;
@@ -41,7 +41,7 @@ declare namespace NexusAI {
     [key: string]: unknown;
   }
 
-  /** 上游模型拉取结果（new-api FetchUpstreamModels）。 */
+  /** 上游模型拉取结果（FetchUpstreamModels）。 */
   interface ChannelUpstreamModels {
     ok: boolean;
     message?: string;
@@ -81,7 +81,7 @@ declare namespace NexusAI {
     message?: string;
   }
 
-  /** 渠道汇总行（提供商页·借鉴 Aether providers summary：配置 + 水位 + 近 24h 流量 + 运行时健康）。 */
+  /** 渠道汇总行（提供商页·providers summary：配置 + 水位 + 近 24h 流量 + 运行时健康）。 */
   interface ChannelSummary {
     channel: Channel;
     totalKeys: number | string;
@@ -109,9 +109,9 @@ declare namespace NexusAI {
     pageSize: number;
   }
 }
-/** nexusai 控制台领域类型 · 控制面契约域（①KeySync ③QuotaOp·ruoyi 控制面↔网关）。 */
+/** nexusai 控制台领域类型 · 控制面契约域（①KeySync ③QuotaOp·业务面 控制面↔网关）。 */
 declare namespace NexusAI {
-  /** 契约①Key 同步：ruoyi 下发 sk- Key 投影到网关 nai_token。 */
+  /** 契约①Key 同步：业务面 下发 sk- Key 投影到网关 nai_token。 */
   interface KeySync {
     keyHash: string;
     projectCode?: string;
@@ -125,7 +125,7 @@ declare namespace NexusAI {
   }
 
 }
-/** nexusai 控制台领域类型 · 模型域（模型目录 Aether GlobalModel 形态·对接 /admin/models）。 */
+/** nexusai 控制台领域类型 · 模型域（模型目录 GlobalModel 形态·对接 /admin/models）。 */
 declare namespace NexusAI {
   interface Model {
     id?: number | string;
@@ -137,9 +137,9 @@ declare namespace NexusAI {
     maxOutputTokens?: number;
     /** 1=活跃 0=停用（停用后数据面 403 model_disabled） */
     status?: number;
-    /** 入站别名归一正则（JSON 数组字符串·Aether model_mappings） */
+    /** 入站别名归一正则（JSON 数组字符串·model_mappings） */
     aliasPatterns?: string;
-    /** 1=允许上游元数据同步覆盖（new-api sync_official）0=本地锁定 */
+    /** 1=允许上游元数据同步覆盖（sync_official）0=本地锁定 */
     syncOfficial?: number;
     inputRate?: number;
     outputRate?: number;
@@ -172,7 +172,7 @@ declare namespace NexusAI {
     targetModel?: string;
   }
 
-  /** 链路预览 · Key 行（运行时健康/熔断态）。 */
+  /** 链路预览 ·Key 行（运行时健康/熔断态）。 */
   interface ModelRoutingKey {
     keyId: number | string;
     masked: string;
@@ -200,7 +200,7 @@ declare namespace NexusAI {
     keys: ModelRoutingKey[];
   }
 
-  /** 链路预览 · 协议家族组（= Aether api_format 组）。 */
+  /** 链路预览 · 协议家族组（api_format 组）。 */
   interface ModelRoutingGroup {
     protocol: string;
     totalChannels: number | string;
@@ -297,7 +297,7 @@ declare namespace NexusAI {
     successRate?: number;
   }
 
-  /** Dashboard 运维总览聚合（去钱化·借鉴 axonhub）。tokenStats 键为 `${period}${Input|Output|Cached}`（period=today/week/month/all）。 */
+  /** Dashboard 运维总览聚合（去钱化）。tokenStats 键为 `${period}${Input|Output|Cached}`（period=today/week/month/all）。 */
   interface DashboardStats {
     totalRequests?: number;
     successRateAllTime?: number;
@@ -339,7 +339,7 @@ declare namespace NexusAI {
     totalTokens?: number;
   }
 
-  /** Dashboard 性能最快榜行（一比一 axonhub fastest：吞吐 tokens/s + 置信度）。 */
+  /** Dashboard 性能最快榜行（fastest：吞吐 tokens/s + 置信度）。 */
   interface PerfStat {
     key?: string;
     throughput?: number;
@@ -350,7 +350,7 @@ declare namespace NexusAI {
     confidence?: 'high' | 'medium' | 'low';
   }
 
-  /** Dashboard 性能时序日点（一比一 axonhub model/channelPerformanceStats：逐日×维度吞吐/TTFT/请求量）。 */
+  /** Dashboard 性能时序日点（model/channelPerformanceStats：逐日×维度吞吐/TTFT/请求量）。 */
   interface PerfDailyPoint {
     date?: string;
     key?: string;
@@ -380,14 +380,14 @@ declare namespace NexusAI {
     [key: string]: unknown;
   }
 }
-/** nexusai 控制台领域类型 · 健康监控域（协议端点/模型/渠道三维度时间线·一比一 Aether·对接 /admin/observe/health）。 */
+/** nexusai 控制台领域类型 · 健康监控域（协议端点/模型/渠道三维度时间线·对接 /admin/observe/health）。 */
 declare namespace NexusAI {
   /** 健康监控公共字段：计数四件套 + 状态页式时间线（healthy/warning/unhealthy/unknown）。Long 经全局序列化为字符串。 */
   interface HealthMonitorBase {
     totalAttempts: number | string;
     successCount: number | string;
     failedCount: number | string;
-    /** 无请求时为 1.0（一比一 Aether） */
+    /** 无请求时为 1.0 */
     successRate: number;
     lastEventAt?: string | null;
     timeline: string[];
@@ -441,7 +441,7 @@ declare namespace NexusAI {
     channels: ChannelHealth[];
   }
 
-  /** 性能详情逐桶点（借鉴 new-api perf_metrics bucketPoint·48 段·空段仅 requestCount=0）。 */
+  /** 性能详情逐桶点（perf_metrics bucketPoint·48 段·空段仅 requestCount=0）。 */
   interface PerfSeriesPoint {
     ts: string;
     requestCount: number | string;
@@ -451,7 +451,7 @@ declare namespace NexusAI {
     avgTps?: number;
   }
 
-  /** 性能详情汇总（new-api ModelSummary 同构）。 */
+  /** 性能详情汇总（ModelSummary 同构）。 */
   interface PerfSeriesSummary {
     totalAttempts: number | string;
     successCount: number | string;
@@ -462,7 +462,7 @@ declare namespace NexusAI {
     avgTps: number;
   }
 
-  /** 性能详情分解行（dim=model→分渠道·dim=channel→分模型·new-api per-group 表同构）。 */
+  /** 性能详情分解行（dim=model→分渠道·dim=channel→分模型·per-group 表同构）。 */
   interface PerfBreakdownRow {
     key: string;
     name: string;
@@ -488,7 +488,7 @@ declare namespace NexusAI {
     breakdown: PerfBreakdownRow[];
   }
 }
-/** nexusai 控制台领域类型 · 性能分析域（实时运行状态/渠道性能/分位时序/错误分布·一比一 Aether·对接 /admin/observe/perf）。 */
+/** nexusai 控制台领域类型 · 性能分析域（实时运行状态/渠道性能/分位时序/错误分布·对接 /admin/observe/perf）。 */
 declare namespace NexusAI {
   /** 实时运行状态（10s 轮询）。 */
   interface PerfLive {
@@ -514,7 +514,7 @@ declare namespace NexusAI {
     alerts: { level?: string; message?: string }[];
   }
 
-  /** 渠道性能行（summary 与每渠道行共形·Aether ProviderPerformanceItem）。 */
+  /** 渠道性能行（summary 与每渠道行共形·ProviderPerformanceItem）。 */
   interface PerfProviderRow {
     channelId?: string;
     channelName?: string;
@@ -747,7 +747,7 @@ declare namespace NexusAI {
     features: Record<string, boolean>;
   }
 }
-/** nexusai 控制台领域类型 · 项目域（工作区 + M2M 集成令牌·借鉴 axonhub Project·对接 /admin/projects）。 */
+/** nexusai 控制台领域类型 · 项目域（工作区 + M2M 集成令牌·Project·对接 /admin/projects）。 */
 declare namespace NexusAI {
   interface Project {
     /** 雪花 id（后端 Long 已序列化为字符串防 JS 精度丢失） */
@@ -757,7 +757,7 @@ declare namespace NexusAI {
     description?: string;
     /** 创建/轮转返回明文；列表为脱敏 ****abcd */
     token?: string;
-    /** 访问策略（借鉴 axonhub Profiles·JSON 数组串·空=不限）：允许的模型 */
+    /** 访问策略（Profiles·JSON 数组串·空=不限）：允许的模型 */
     allowedModels?: string;
     /** 允许的能力（chat/embedding/image/rerank） */
     allowedModalities?: string;
@@ -885,7 +885,7 @@ declare namespace NexusAI {
     [key: string]: unknown;
   }
 }
-/** nexusai 控制台领域类型 · 独立密钥域（standalone Access Key·一比一 Aether AccessKeys·对接 /admin/access-keys）。 */
+/** nexusai 控制台领域类型 · 独立密钥域（standalone Access Key·AccessKeys·对接 /admin/access-keys）。 */
 declare namespace NexusAI {
   interface AccessKey {
     id?: number;
@@ -988,7 +988,7 @@ declare namespace NexusAI {
     targetModel?: string;
     modality?: string;
     streamMode?: boolean;
-    /** 入站 API 格式（openai:chat/claude:messages/...·一比一 Aether api_format） */
+    /** 入站 API 格式（openai:chat/claude:messages/...·api_format） */
     apiFormat?: string;
     /** 上游端点 API 格式（与 apiFormat 不同即发生格式转换） */
     endpointApiFormat?: string;
@@ -1022,7 +1022,7 @@ declare namespace NexusAI {
     [key: string]: unknown;
   }
 
-  /** 用量维度聚合行（用量分析面板·一比一 Aether aggregation/stats） */
+  /** 用量维度聚合行（用量分析面板·aggregation/stats） */
   interface UsageAggItem {
     key?: string;
     label?: string;
@@ -1039,7 +1039,7 @@ declare namespace NexusAI {
     cacheHitRate?: number;
   }
 
-  /** 活跃度热图（一比一 Aether /usage/heatmap·365 天） */
+  /** 活跃度热图（/usage/heatmap·365 天） */
   interface UsageHeatmap {
     startDate?: string;
     endDate?: string;
@@ -1049,7 +1049,7 @@ declare namespace NexusAI {
     days?: { date: string; requests: number | string; totalTokens: number | string; costUsd: number | string }[];
   }
 
-  /** 请求间隔时间线（一比一 Aether interval-timeline·按用户分组散点） */
+  /** 请求间隔时间线（interval-timeline·按用户分组散点） */
   interface IntervalTimeline {
     analysisPeriodHours?: number;
     totalPoints?: number;
@@ -1058,7 +1058,7 @@ declare namespace NexusAI {
     models?: string[];
   }
 
-  /** 进行中请求（一比一 Aether /usage/active·进程内注册表快照） */
+  /** 进行中请求（/usage/active·进程内注册表快照） */
   interface ActiveRequest {
     requestId?: string;
     status?: 'pending' | 'streaming';
@@ -1092,7 +1092,7 @@ declare namespace NexusAI {
     modelPolicies?: (RoutingPolicy & { model?: string })[];
   }
 
-  /** 调度策略分组（借鉴 Aether routing_groups） */
+  /** 调度策略分组（routing_groups） */
   interface RoutingGroup {
     /** 雪花 id（后端序列化为字符串防精度丢失） */
     id?: number | string;
@@ -1106,7 +1106,7 @@ declare namespace NexusAI {
     updateDt?: string;
   }
 
-  // ===== 代理节点 / 模块管理 / 系统设置（一比一 Aether） =====
+  // ===== 代理节点 / 模块管理 / 系统设置 =====
 
   /** 出口代理节点 */
   interface ProxyNode {

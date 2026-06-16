@@ -9,7 +9,7 @@ defineOptions({ name: 'ModelHealthTile' });
 
 const theme = useThemeVars();
 
-/** 模型健康瓦片（一比一 Aether 模型卡）：模型 Tab 网格与渠道展开明细共用。点击钻取性能详情。 */
+/** 模型健康瓦片（模型卡）：模型 Tab 网格与渠道展开明细共用。点击钻取性能详情。 */
 const props = withDefaults(
   defineProps<{
     item: NexusAI.ModelHealth;

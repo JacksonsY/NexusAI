@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { fetchChannelKeys, fetchChannels, fetchDashboard } from '@/service/api';
 
-/** 时延人话格式（照抄 axonhub formatDuration）：<1s 整毫秒、<1min 一位小数秒、否则分钟。 */
+/** 时延人话格式（照抄 formatDuration）：<1s 整毫秒、<1min 一位小数秒、否则分钟。 */
 export function formatDuration(ms?: number): string {
   const v = ms ?? 0;
   if (!Number.isFinite(v) || v <= 0) return '0ms';
@@ -11,13 +11,13 @@ export function formatDuration(ms?: number): string {
   return `${(v / 60000).toFixed(1)}m`;
 }
 
-/** 大数缩写（一比一 axonhub formatNumber）：≥1000 即 K/M/B，两位小数去尾零（1950→1.95K、2000→2K），小于千原样。 */
+/** 大数缩写（formatNumber）：≥1000 即 K/M/B，两位小数去尾零（1950→1.95K、2000→2K），小于千原样。 */
 export function formatCompact(n?: number): string {
   const v = n ?? 0;
   const abs = Math.abs(v);
   const suffix = (divisor: number, s: string) => {
     const raw = (v / divisor).toFixed(2);
-    // 去尾零（axonhub trim：2.00→2、1.50→1.5）
+    // 去尾零（trim：2.00→2、1.50→1.5）
     const trimmed = raw.replace(/\.?0+$/, '');
     return `${trimmed}${s}`;
   };

@@ -1,5 +1,5 @@
 /**
- * 模型管理共享格式化（口径一比一 Aether ModelManagement）。
+ * 模型管理共享格式化（口径ModelManagement）。
  * 后端 Long 全局序列化为字符串（防 JS 精度丢失），计数字段入口一律 Number() 归一。
  */
 
@@ -9,7 +9,7 @@ export function num(value?: number | string | null): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-/** 调用次数缩写（Aether formatUsageCount：1.2k / 3.4M）。 */
+/** 调用次数缩写（formatUsageCount：1.2k / 3.4M）。 */
 export function fmtUsageCount(value?: number | string | null): string {
   const n = num(value);
   if (n === null || n === 0) return '0';

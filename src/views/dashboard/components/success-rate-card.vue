@@ -1,4 +1,4 @@
-<!-- 成功率卡（像素级复刻 axonhub SuccessRateCard：图标方块 + 大数字 + primary/20 轨道进度条 + 失败请求/平均值） -->
+<!-- 成功率卡（像素级复刻 SuccessRateCard：图标方块 + 大数字 + primary/20 轨道进度条 + 失败请求/平均值） -->
 <script setup lang="ts">
 import { useThemeVars } from 'naive-ui';
 import DashCard from './dash-card.vue';

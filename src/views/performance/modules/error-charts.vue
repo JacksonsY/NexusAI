@@ -4,7 +4,7 @@ import { useEcharts } from '@/hooks/common/echarts';
 
 defineOptions({ name: 'ErrorCharts' });
 
-/** 错误分布（环形）+ 错误趋势（红线）（一比一 Aether ErrorDistributionChart + 错误趋势 LineChart）。 */
+/** 错误分布（环形）+ 错误趋势（红线）（ErrorDistributionChart + 错误趋势 LineChart）。 */
 const props = defineProps<{
   data: NexusAI.PerfErrorsResponse | null;
   loading: boolean;

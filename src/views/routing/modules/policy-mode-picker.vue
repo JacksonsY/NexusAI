@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineOptions({ name: 'PolicyModePicker' });
 
-/** 分段按钮组（Aether 调度策略页同款：bg-muted 容器内高亮选中项）。 */
+/** 分段按钮组（调度策略页同款：bg-muted 容器内高亮选中项）。 */
 const props = defineProps<{
   options: { label: string; value: string; icon?: string }[];
 }>();

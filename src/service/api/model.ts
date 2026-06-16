@@ -1,6 +1,6 @@
 import { request } from '../request';
 
-// ===== 模型目录 Models（Aether GlobalModel 形态：列表聚合/详情/批量/关联/链路） =====
+// ===== 模型目录 Models（GlobalModel 形态：列表聚合/详情/批量/关联/链路） =====
 
 /** 分页列表（每行 = model + 渠道计数 + 近 30 天调用次数）。 */
 export function fetchModels(params?: { pageNum?: number; pageSize?: number; search?: string; status?: number }) {
@@ -12,7 +12,7 @@ export function fetchModelDetail(id: number | string) {
   return request<NexusAI.ModelRow>({ url: `/admin/models/${id}` });
 }
 
-/** 缺失模型检测（new-api GetMissingModels）：路由已登记但目录未建 → 计费口径缺口。 */
+/** 缺失模型检测（GetMissingModels）：路由已登记但目录未建 → 计费口径缺口。 */
 export function fetchMissingModels() {
   return request<string[]>({ url: '/admin/models/missing' });
 }
@@ -53,7 +53,7 @@ export function fetchAssignModelChannels(modelKey: string, channelIds: Array<num
   });
 }
 
-/** 同步预览（new-api SyncUpstreamPreview）：缺失模型 + 字段冲突 diff。 */
+/** 同步预览（SyncUpstreamPreview）：缺失模型 + 字段冲突 diff。 */
 export function fetchModelSyncPreview() {
   return request<NexusAI.ModelSyncPreview>({ url: '/admin/models/sync/preview' });
 }

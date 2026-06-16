@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 
 /**
- * JSON 树查看器（一比一 Aether JsonContent 清洁室实现）：
+ * JSON 树查看器（JsonContent 清洁室实现）：
  * token 着色 + 行号 + 对象/数组逐节点折叠（chevron·折叠显示 "N keys / N items" 统计）
  * + expandDepth 受控初始展开深度；超大 JSON（节点过多）退化为纯文本防卡顿。
  */

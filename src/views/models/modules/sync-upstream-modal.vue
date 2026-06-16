@@ -29,7 +29,7 @@ async function loadPreview() {
   const { data } = await fetchModelSyncPreview();
   missing.value = data?.missing ?? [];
   conflicts.value = data?.conflicts ?? [];
-  // 默认全选新建；覆盖默认不勾（new-api 同策略：覆盖需显式选择）
+  // 默认全选新建；覆盖默认不勾（同策略：覆盖需显式选择）
   selectedCreate.value = new Set(missing.value.map(m => m.modelKey));
   selectedFields.value = new Set();
   loading.value = false;

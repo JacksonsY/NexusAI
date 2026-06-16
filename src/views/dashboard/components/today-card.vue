@@ -1,4 +1,4 @@
-<!-- 今日请求卡（像素级复刻 axonhub TodayRequestsCard：bg-primary 反色 + Activity + ping 脉冲 + 本周/本月） -->
+<!-- 今日请求卡（像素级复刻 TodayRequestsCard：bg-primary 反色 + Activity + ping 脉冲 + 本周/本月） -->
 <script setup lang="ts">
 import { useThemeVars } from 'naive-ui';
 
@@ -51,7 +51,7 @@ const theme = useThemeVars();
   transition: all 0.2s ease;
 }
 
-/* 一比一 axonhub .hover-card:hover */
+/* .hover-card:hover */
 .today-card:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgb(0 0 0 / 10%);

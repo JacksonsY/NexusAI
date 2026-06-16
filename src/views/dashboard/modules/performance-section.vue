@@ -1,4 +1,4 @@
-<!-- 性能分析折叠区（一比一 axonhub：每行=性能多曲线大图(4/7) + 最快榜(3/7)·模型/渠道两行·近30天逐日数据） -->
+<!-- 性能分析折叠区（每行=性能多曲线大图(4/7) + 最快榜(3/7)·模型/渠道两行·近30天逐日数据） -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useThemeVars } from 'naive-ui';
@@ -48,7 +48,7 @@ onMounted(async () => {
   channelRows.value = toRows(c.data, props.resolveChannelName);
 });
 
-/** 卡描述（一比一 axonhub performanceDescription）：共 N 次请求。 */
+/** 卡描述（performanceDescription）：共 N 次请求。 */
 const modelDesc = computed(
   () => `显示过去30天的tokens/second与首个Token延迟，共${formatCompact(modelRows.value.reduce((s, r) => s + r.requestCount, 0))}次请求。`
 );

@@ -10,9 +10,9 @@ export function totalTokensOf(r: NexusAI.DimensionStat): number {
 }
 
 /**
- * 维度分析数据编排（渠道/模型/上游凭证·去钱化·一比一 axonhub）。
+ * 维度分析数据编排（渠道/模型/上游凭证·去钱化）。
  *
- * 与 axonhub `channelTimePeriod` ↔ `channelTokensTimePeriod` 双 state 对齐：
+ * 与 `channelTimePeriod` ↔ `channelTokensTimePeriod` 双 state 对齐：
  * 请求量卡与 Token 卡**各持独立时间窗、各自重拉、各自排序**（请求量按 total 降序 / Token 按 totalTokens 降序），
  * 杜绝两卡共用一个窗导致的「改一个串台另一个」，以及 Token 卡沿用请求量排序导致的「序号货不对板」。
  * 组件只消费 rows，不在模板拉数；rows 注入展示名（前端用已拉 channels/keys 列表映射·存储层不查名解耦）。

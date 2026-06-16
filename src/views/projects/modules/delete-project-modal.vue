@@ -1,4 +1,4 @@
-<!-- 删除项目弹窗（一比一 axonhub DeleteProjectDialog 流程：红色警示 + 必须输入项目名称才能确认删除）。 -->
+<!-- 删除项目弹窗（DeleteProjectDialog 流程：红色警示 + 必须输入项目名称才能确认删除）。 -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { fetchDeleteProject } from '@/service/api';

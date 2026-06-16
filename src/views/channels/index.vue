@@ -19,7 +19,7 @@ import PriorityDialog from './modules/priority-dialog.vue';
 
 defineOptions({ name: 'Channels' });
 
-/** 提供商管理（一比一 Aether ProviderManagement：工具栏(搜索+筛选+调度+新增+刷新) → 表格(行内备注编辑) → 详情抽屉）。 */
+/** 提供商管理（ProviderManagement：工具栏(搜索+筛选+调度+新增+刷新) → 表格(行内备注编辑) → 详情抽屉）。 */
 const loading = ref(false);
 const rows = ref<NexusAI.ChannelSummary[]>([]);
 
@@ -178,7 +178,7 @@ function num(value?: number | string | null): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
-// ===== 批量操作（new-api 渠道批量启停/删除·勾选出现操作条） =====
+// ===== 批量操作（渠道批量启停/删除·勾选出现操作条） =====
 const checkedIds = ref<number[]>([]);
 
 async function batchStatus(status: number) {
@@ -199,7 +199,7 @@ async function batchDelete() {
   }
 }
 
-/** 渠道复制（new-api CopyChannel·复制配置+渠道密钥+路由·副本默认停用待确认）。 */
+/** 渠道复制（CopyChannel·复制配置+渠道密钥+路由·副本默认停用待确认）。 */
 async function copyChannel(row: NexusAI.ChannelSummary) {
   const { error } = await fetchCopyChannel(row.channel.id!);
   if (!error) {
@@ -223,14 +223,14 @@ function quotaExpired(ch: NexusAI.Channel): boolean {
   return exp > 0 && exp < Date.now();
 }
 
-/** 健康条色（≥80 绿 / ≥50 黄 / 其余红·一比一 Aether 端点健康条配色语义）。 */
+/** 健康条色（≥80 绿 / ≥50 黄 / 其余红·端点健康条配色语义）。 */
 function barColorClass(percent: number) {
   if (percent >= 80) return 'bg-green-500/85';
   if (percent >= 50) return 'bg-amber-400/85';
   return 'bg-red-500/85';
 }
 
-/** 协议缩写（端点健康格标签·一比一 Aether formatApiFormatShort 心法）。 */
+/** 协议缩写（端点健康格标签·formatApiFormatShort 心法）。 */
 function protocolShort(protocol?: string) {
   const map: Record<string, string> = {
     openai: 'OAI',
@@ -314,7 +314,7 @@ const columns = computed<DataTableColumns<NexusAI.ChannelSummary>>(() => [
     render: row => {
       const id = Number(row.channel.id);
       const balance = balances.value[id];
-      // 月卡模式（Aether monthly_quota）：展示周期额度 + 重置倒计时 + 过期标记，替代上游余额查询
+      // 月卡模式（monthly_quota）：展示周期额度 + 重置倒计时 + 过期标记，替代上游余额查询
       if (row.channel.billingType === 'monthly_quota') {
         const resetIn = quotaResetIn(row.channel);
         const expired = quotaExpired(row.channel);
@@ -560,7 +560,7 @@ onMounted(refreshAll);
       </NEmpty>
 
       <template v-else>
-        <!-- 批量操作条（new-api 范式：勾选后浮现） -->
+        <!-- 批量操作条（范式：勾选后浮现） -->
         <div
           v-if="checkedIds.length > 0"
           class="mb-8px flex items-center gap-8px rounded-8px bg-primary/8 px-12px py-6px text-12px"

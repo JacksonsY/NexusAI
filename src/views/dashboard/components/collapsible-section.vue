@@ -1,4 +1,4 @@
-<!-- 折叠分区（一比一 axonhub CollapsibleSection）：带边框卡式区头 p-4 + primary/10 图标徽章 + text-lg 标题 + Chevron 旋转·展开态 localStorage 记忆 -->
+<!-- 折叠分区（CollapsibleSection）：带边框卡式区头 p-4 + primary/10 图标徽章 + text-lg 标题 + Chevron 旋转·展开态 localStorage 记忆 -->
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core';
 import { useThemeVars } from 'naive-ui';
@@ -10,7 +10,7 @@ interface Props {
   title: string;
   /** iconify 图标名（图标徽章） */
   icon: string;
-  /** localStorage 持久化键（展开态记忆·借鉴 axonhub） */
+  /** localStorage 持久化键（展开态记忆） */
   storageKey: string;
   /** 默认是否展开 */
   defaultOpen?: boolean;
@@ -56,7 +56,7 @@ const open = useStorage(`nexusai-dash-section-${props.storageKey}`, props.defaul
 </template>
 
 <style scoped>
-/* axonhub hover:bg-accent/50 */
+/* hover:bg-accent/50 */
 .section-head:hover {
   background-color: v-bind('theme.hoverColor') !important;
 }

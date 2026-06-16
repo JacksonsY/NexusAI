@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineOptions({ name: 'MonitorShell' });
 
-/** 健康监控卡外壳（一比一 Aether 三卡公共骨架）：标题/副标 + 回溯时间选择 + 刷新 + loading/空态。 */
+/** 健康监控卡外壳（三卡公共骨架）：标题/副标 + 回溯时间选择 + 刷新 + loading/空态。 */
 defineProps<{
   title: string;
   subtitle: string;

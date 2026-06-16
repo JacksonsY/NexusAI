@@ -31,7 +31,7 @@ export default function useContext<T>(
    * Injects the context value.
    *
    * @param consumerName - The name of the component that is consuming the context. If provided, the component must be
-   *   used within the context provider.
+   * used within the context provider.
    * @param defaultValue - The default value to return if the context is not provided.
    * @returns The context value.
    */

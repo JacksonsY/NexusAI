@@ -82,7 +82,7 @@ async function submit() {
               v-model:value="form.projectCode"
               :disabled="!!editing"
               :spellcheck="false"
-              placeholder="如 ruoyi-saas…"
+              placeholder="如 my-saas…"
             />
             <div class="mt-4px text-12px op-60">M2M 接入的稳定标识，创建后不可修改</div>
           </div>

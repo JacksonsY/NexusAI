@@ -4,7 +4,7 @@ import { NCard, NEmpty, NSpin } from 'naive-ui';
 import { fmtCount, fmtTokens, fmtUsd, num } from '../composables/format';
 
 /**
- * 活跃度热图卡（一比一 Aether ActivityHeatmapCard）：GitHub 风格 365 天格子，
+ * 活跃度热图卡（ActivityHeatmapCard）：GitHub 风格 365 天格子，
  * 主题色 alpha 随当日请求量线性插值（0.08 空 → 0.95 峰值），周列 × 7 行，
  * 月份顶标 + 周一/三/五侧标，悬停跟随 tooltip（日期/请求/tokens/费用 $）。
  */
@@ -64,7 +64,7 @@ function alphaOf(requests: number): number {
   return 0.2 + 0.75 * Math.min(requests / maxRequests.value, 1);
 }
 
-/** 图例 5 档（一比一 Aether 少→多）。 */
+/** 图例 5 档（少→多）。 */
 const legendAlphas = [0.08, 0.25, 0.45, 0.65, 0.85];
 
 /** 扁平格序列（grid-auto-flow:column 按列填充·每周补满 7 格保持对齐） */

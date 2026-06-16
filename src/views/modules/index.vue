@@ -6,7 +6,7 @@ import { fetchModuleOrder, fetchModuleStatus, saveModuleOrder, setModuleEnabled 
 import ModuleSettingsDrawer from './modules/module-settings-drawer.vue';
 
 /**
- * 模块管理（一比一 Aether ModuleManagement）：搜索栏 → 内置工具卡（跳转）→
+ * 模块管理（ModuleManagement）：搜索栏 → 内置工具卡（跳转）→
  * 扩展模块卡片网格（状态指示点/开关/配置按钮/拖拽排序/恢复默认）。
  */
 defineOptions({ name: 'Modules' });
@@ -24,7 +24,7 @@ const settingsDrawerShow = ref(false);
 const settingsModuleName = ref<string | null>(null);
 
 function openSettings(name: string) {
-  // 通知服务模块配置入口 = 独立页（Aether modules/important-notification → /admin/notification-service 重定向对位）
+  // 通知服务模块配置入口 = 独立页（modules/important-notification → /admin/notification-service 重定向对位）
   if (name === 'important_notification') {
     router.push('/notification-service');
     return;
@@ -34,7 +34,7 @@ function openSettings(name: string) {
 }
 const dragOverName = ref<string | null>(null);
 
-/** 内置工具（一比一 Aether BUILTIN_TOOLS：邮件配置/通知服务/IP 安全/审计日志） */
+/** 内置工具（BUILTIN_TOOLS：邮件配置/通知服务/IP 安全/审计日志） */
 const BUILTIN_TOOLS = [
   { name: '邮件配置', description: '配置 SMTP 邮件服务，用于发送运维告警邮件（通知服务的邮件通道）', icon: 'carbon:email', href: '/email-settings' },
   { name: '通知服务', description: '管理通知项、模板和推送服务策略（邮件 / Server酱 / Bark）', icon: 'carbon:notification', href: '/notification-service' },

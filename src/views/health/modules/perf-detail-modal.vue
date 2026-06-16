@@ -11,7 +11,7 @@ import MetricBox from './metric-box.vue';
 defineOptions({ name: 'PerfDetailModal' });
 
 /**
- * 性能详情弹窗（借鉴 new-api 模型广场 ModelDetailsPerformance）：
+ * 性能详情弹窗（模型广场 ModelDetailsPerformance）：
  * 3 汇总卡（TPS/平均延迟/成功率+故障时段）→ 分渠道/分模型性能表（TPS/TTFT/延迟/成功率 sparkline）
  * → TTFT 趋势曲线 → 可用率曲线。dim=model 看"该模型在各渠道的表现"，dim=channel 看"该渠道各模型的表现"。
  */
@@ -61,12 +61,12 @@ async function loadData() {
   }
 }
 
-/** 故障时段数（new-api incidents：成功率 < 100% 的桶计 1）。 */
+/** 故障时段数（incidents：成功率 < 100% 的桶计 1）。 */
 const incidentCount = computed(
   () => (data.value?.series ?? []).filter(p => Number(p.requestCount) > 0 && (p.successRate ?? 1) < 1).length
 );
 
-/** 成功率卡色（new-api intent：≥99.9 绿 / ≥99 默认 / 其余黄）。 */
+/** 成功率卡色（intent：≥99.9 绿 / ≥99 默认 / 其余黄）。 */
 const rateIntentClass = computed(() => {
   const rate = (data.value?.summary.successRate ?? 1) * 100;
   if (rate >= 99.9) return 'text-green-600 dark:text-green-400';
@@ -270,7 +270,7 @@ watch(data, () => {
       </div>
 
       <div v-else class="flex-col gap-20px">
-        <!-- 汇总三卡（new-api StatCard：TPS / 平均延迟 / 成功率+故障时段） -->
+        <!-- 汇总三卡（StatCard：TPS / 平均延迟 / 成功率+故障时段） -->
         <div class="grid grid-cols-1 gap-8px sm:grid-cols-3">
           <MetricBox label="TPS" icon="lucide:timer" :value="formatTps(data.summary.avgTps)" hint="持续每秒输出 token" />
           <MetricBox label="平均延迟" icon="lucide:gauge" :value="formatMs(data.summary.avgLatencyMs)" :hint="`平均 TTFT ${formatMs(data.summary.avgTtftMs)}`" />

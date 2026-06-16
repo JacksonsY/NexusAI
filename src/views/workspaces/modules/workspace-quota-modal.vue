@@ -59,7 +59,7 @@ async function submit() {
     externalWorkspaceId: props.user.externalId,
     op: op.value,
     usd: usd.value,
-    requestId: `console-user-${crypto.randomUUID()}`   // 幂等去重（契约③ M11）
+    requestId: `console-user-${crypto.randomUUID()}` // 幂等去重（契约③ M11）
   });
   submitting.value = false;
   if (!error) {

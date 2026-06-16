@@ -23,7 +23,7 @@ const { dash, load, requestGrowth, resolveChannelName, resolveKeyName } = useDas
 
 const dailyRows = ref<NexusAI.DailyPoint[]>([]);
 
-/** 全程成功率（百分比·0-100）+ 全程失败数（一比一 axonhub SuccessRateCard 的 all-time 口径）。 */
+/** 全程成功率（百分比·0-100）+ 全程失败数（SuccessRateCard 的 all-time 口径）。 */
 const successRate = computed(() => (dash.value.successRateAllTime ?? 1) * 100);
 const failedAllTime = computed(() => {
   const total = dash.value.totalRequests ?? 0;
@@ -44,9 +44,9 @@ onMounted(refresh);
 
 <template>
   <NSpace vertical :size="24">
-    <!-- 概览 section（axonhub space-y-4：KPI 行与 Daily 行间 16·区块间 24） -->
+    <!-- 概览 section（space-y-4：KPI 行与 Daily 行间 16·区块间 24） -->
     <div class="flex flex-col gap-16px">
-      <!-- 4 KPI（总请求数 / 成功率 / 词元统计 / 今日请求）·axonhub grid gap-6 -->
+      <!-- 4 KPI（总请求数 / 成功率 / 词元统计 / 今日请求）·grid gap-6 -->
       <NGrid :cols="4" :x-gap="24" :y-gap="24" responsive="screen" item-responsive>
         <NGridItem span="4 s:2 m:1">
           <KpiCard label="总请求数" :value="formatCompact(dash.totalRequests)" icon="lucide:database" :growth="requestGrowth" />
@@ -66,7 +66,7 @@ onMounted(refresh);
         </NGridItem>
       </NGrid>
 
-      <!-- 每日概览面积图（4/7） + 渠道成功率（3/7）·axonhub grid gap-4 -->
+      <!-- 每日概览面积图（4/7） + 渠道成功率（3/7）·grid gap-4 -->
       <NGrid :cols="7" :x-gap="16" :y-gap="16" responsive="screen" item-responsive>
         <NGridItem span="7 m:4">
           <DashCard class="h-full">
@@ -95,11 +95,11 @@ onMounted(refresh);
       </NGrid>
     </div>
 
-    <!-- 渠道分析（折叠·请求量 + Token 双图 + 时段选择器·axonhub 四区默认全折叠） -->
+    <!-- 渠道分析（折叠·请求量 + Token 双图 + 时段选择器· 四区默认全折叠） -->
     <DimensionSection dim="channel" title="渠道分析" icon="lucide:bar-chart-3" storage-key="channels" :resolve-name="resolveChannelName" />
     <!-- 模型分析（折叠） -->
     <DimensionSection dim="model" title="模型分析" icon="lucide:brain" storage-key="models" :resolve-name="modelName" />
-    <!-- 上游凭证分析（折叠·nexusai 日志维度为渠道密钥 key_id，非 axonhub 的调用方 API 密钥） -->
+    <!-- 上游凭证分析（折叠·nexusai 日志维度为渠道密钥 key_id，非 的调用方 API 密钥） -->
     <DimensionSection dim="key" title="上游凭证分析" icon="lucide:key" storage-key="apiKeys" :resolve-name="resolveKeyName" />
 
     <!-- 性能分析（折叠·模型/渠道性能柱大图 + 最快榜） -->

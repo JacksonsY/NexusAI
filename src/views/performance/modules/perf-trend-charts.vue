@@ -4,13 +4,13 @@ import { useEcharts } from '@/hooks/common/echarts';
 
 defineOptions({ name: 'PerfTrendCharts' });
 
-/** 输出 TPS 趋势 + 平均首字趋势（一比一 Aether 双 LineChart·按渠道多曲线）。 */
+/** 输出 TPS 趋势 + 平均首字趋势（双 LineChart·按渠道多曲线）。 */
 const props = defineProps<{
   timeline: NexusAI.PerfProviderTimelinePoint[];
   loading: boolean;
 }>();
 
-/** 多渠道曲线色板（一比一 Aether PROVIDER_CHART_COLORS）。 */
+/** 多渠道曲线色板（PROVIDER_CHART_COLORS）。 */
 const COLORS = ['#3b82f6', '#10b981', '#eab308', '#ef4444', '#8b5cf6', '#0ea5e9', '#f97316', '#14b8a6'];
 
 const AXIS = {
@@ -47,7 +47,7 @@ function baseOption(unitFormatter: string | ((v: number) => string)) {
 const { domRef: tpsRef, updateOptions: updateTps } = useEcharts(() => baseOption('{value} tps'));
 const { domRef: fbRef, updateOptions: updateFb } = useEcharts(() => baseOption((v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}s` : `${v}ms`)));
 
-/** timeline 行 → 按渠道多曲线（一比一 Aether buildProviderPerformanceChartData：labels 全集 + byDate 缺位 null）。 */
+/** timeline 行 → 按渠道多曲线（buildProviderPerformanceChartData：labels 全集 + byDate 缺位 null）。 */
 function buildSeries(metric: 'avgOutputTps' | 'avgFirstByteMs') {
   const labels = Array.from(new Set(props.timeline.map(p => tsLabel(p.ts))));
   const channels = new Map<string, string>();

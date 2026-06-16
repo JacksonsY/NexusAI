@@ -5,17 +5,17 @@ import { $t } from '@/locales';
  * Transform record to option
  *
  * @example
- *   ```ts
- *   const record = {
- *     key1: 'label1',
- *     key2: 'label2'
- *   };
- *   const options = transformRecordToOption(record);
- *   // [
- *   //   { value: 'key1', label: 'label1' },
- *   //   { value: 'key2', label: 'label2' }
- *   // ]
- *   ```;
+ * ```ts
+ * const record = {
+ * key1: 'label1',
+ * key2: 'label2'
+ * };
+ * const options = transformRecordToOption(record);
+ * // [
+ * // { value: 'key1', label: 'label1' },
+ * // { value: 'key2', label: 'label2' }
+ * // ]
+ * ```;
  *
  * @param record
  */

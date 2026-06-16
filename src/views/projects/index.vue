@@ -262,7 +262,7 @@ function confirmRotate(row: NexusAI.Project) {
   });
 }
 
-/** 行操作 ⋯ 下拉（操作流抄 axonhub：归档|激活互斥·删除红色·带图标可扫读）。 */
+/** 行操作 ⋯ 下拉（操作流抄 ：归档|激活互斥·删除红色·带图标可扫读）。 */
 function rowActions(row: NexusAI.Project) {
   const danger = { style: { color: '#d03050' } };
   const ic = (name: string) => () => <SvgIcon icon={name} class="text-14px" />;

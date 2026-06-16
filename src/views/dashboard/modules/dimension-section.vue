@@ -1,4 +1,4 @@
-<!-- 维度分析折叠区（一比一 axonhub：请求量/Token 两卡=柱图 + 序号图例·两卡各持独立时段并各自排序·去钱化无成本列） -->
+<!-- 维度分析折叠区（请求量/Token 两卡=柱图 + 序号图例·两卡各持独立时段并各自排序·去钱化无成本列） -->
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useThemeVars } from 'naive-ui';
@@ -75,7 +75,7 @@ const tokLegend = computed(() => {
           </div>
           <div class="px-24px">
             <DimensionRequestsChart :rows="reqRows" />
-            <!-- axonhub space-y-6：图与图例间 24px -->
+            <!-- space-y-6：图与图例间 24px -->
             <ChartLegend :items="reqLegend" class="mt-24px" />
           </div>
         </DashCard>

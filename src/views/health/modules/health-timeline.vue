@@ -3,7 +3,7 @@ import { computed } from 'vue';
 
 defineOptions({ name: 'HealthTimeline' });
 
-/** 状态页式健康时间线（一比一 Aether EndpointHealthTimeline 的 timeline 模式）：每格 = 时间段健康判色 + tooltip。 */
+/** 状态页式健康时间线（EndpointHealthTimeline 的 timeline 模式）：每格 = 时间段健康判色 + tooltip。 */
 const props = withDefaults(
   defineProps<{
     /** 段状态序列（healthy/warning/unhealthy/unknown） */

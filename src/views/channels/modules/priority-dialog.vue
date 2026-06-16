@@ -11,7 +11,7 @@ import {
 defineOptions({ name: 'PriorityDialog' });
 
 /**
- * 优先级管理（借鉴 Aether PriorityManagementDialog 心智）：
+ * 优先级管理（PriorityManagementDialog 心智）：
  * 双 Tab——提供商优先 / Key 优先；拖拽调整顺序，点击序号可直接编辑（相同数字为同级）；
  * footer 选调度策略（缓存亲和/负载均衡/固定顺序），保存后自动切换为当前 Tab 对应的优先级生效层。
  */
@@ -103,7 +103,7 @@ function finishEditPriority(row: ChannelRow, event: Event) {
   editingId.value = null;
 }
 
-// ===== Key 优先级（左侧渠道分组 + 右侧该渠道 Key 排序·一比一 Aether Key 优先 Tab 形态） =====
+// ===== Key 优先级（左侧渠道分组 + 右侧该渠道 Key 排序·Key 优先 Tab 形态） =====
 const keys = ref<NexusAI.ChannelKey[]>([]);
 const keysLoading = ref(false);
 const activeChannelId = ref<number | null>(null);
@@ -146,7 +146,7 @@ function finishEditKeyPriority(row: NexusAI.ChannelKey, event: Event) {
   editingKeyId.value = null;
 }
 
-// ===== 保存（优先级 + 调度模式 + 优先级生效层一并提交·与 Aether 同语义） =====
+// ===== 保存（优先级 + 调度模式 + 优先级生效层一并提交·与 同语义） =====
 async function save() {
   saving.value = true;
   try {
@@ -160,7 +160,7 @@ async function save() {
         }
       }
     }
-    // 保存后自动切换为当前 Tab 对应的优先级生效层（Aether 同语义）
+    // 保存后自动切换为当前 Tab 对应的优先级生效层（同语义）
     await fetchUpdateScheduling({
       schedulingMode: schedulingMode.value,
       priorityMode: activeTab.value

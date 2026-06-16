@@ -1,4 +1,4 @@
-<!-- 总请求数卡（像素级复刻 axonhub TotalRequestsCard：shadcn Card 结构 + 图标方块 + 大数字 + 环比药丸 + 右下波浪） -->
+<!-- 总请求数卡（像素级复刻 TotalRequestsCard：shadcn Card 结构 + 图标方块 + 大数字 + 环比药丸 + 右下波浪） -->
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useThemeVars } from 'naive-ui';
@@ -57,7 +57,7 @@ const pill = computed(() =>
       </div>
     </div>
 
-    <!-- 右下角波浪装饰（axonhub text-primary/5 × opacity-50 ≈ 2.5% 总透明度） -->
+    <!-- 右下角波浪装饰（text-primary/5 × opacity-50 ≈ 2.5% 总透明度） -->
     <div
       class="pointer-events-none absolute -bottom-16px -right-16px h-96px w-96px"
       :style="{ color: theme.primaryColor, opacity: 0.025 }"

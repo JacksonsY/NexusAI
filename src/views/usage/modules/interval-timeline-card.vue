@@ -5,7 +5,7 @@ import { useEcharts } from '@/hooks/common/echarts';
 import { fetchIntervalTimeline } from '@/service/api/usage';
 
 /**
- * 请求间隔时间线卡（一比一 Aether IntervalTimelineCard）：近 N 小时按用户分组的
+ * 请求间隔时间线卡（IntervalTimelineCard）：近 N 小时按用户分组的
  * 相邻请求间隔散点（y=分钟），多用户分色 + 自定义图例（≤6 项 +N 更多），
  * tooltip「间隔: X.X 分钟」；hours 随页面时间范围预设联动。
  */
@@ -13,7 +13,7 @@ defineOptions({ name: 'IntervalTimelineCard' });
 
 const props = withDefaults(defineProps<{ title: string; hours?: number }>(), { hours: 24 });
 
-/** 多分组配色（一比一 Aether COLORS 10 色环） */
+/** 多分组配色（COLORS 10 色环） */
 const COLORS = [
   'rgba(59, 130, 246, 0.7)',
   'rgba(236, 72, 153, 0.7)',

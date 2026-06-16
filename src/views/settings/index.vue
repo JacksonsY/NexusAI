@@ -12,7 +12,7 @@ import {
 } from '@/service/api';
 
 /**
- * 系统设置（一比一 Aether SystemSettings·按 nexusai 纯转发面语义映射）：
+ * 系统设置（SystemSettings·按 nexusai 纯转发面语义映射）：
  * 站点信息 / 数据管理（导出导入+清空）/ 网络代理 / 基础配置 / 请求记录 /
  * 记录清理策略 / 定时任务 / 运维监控 / 系统信息。
  */

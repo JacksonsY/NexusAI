@@ -1,4 +1,4 @@
-<!-- 图表序号图例（一比一 axonhub ChartLegend）：01. ● 名称 … 主值/次值·2 列竖向填充(gridAutoFlow column)或单列 -->
+<!-- 图表序号图例（ChartLegend）：01. ● 名称 … 主值/次值·2 列竖向填充(gridAutoFlow column)或单列 -->
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useThemeVars } from 'naive-ui';
@@ -16,7 +16,7 @@ const props = withDefaults(defineProps<{ items: LegendItem[]; columns?: 1 | 2 }>
 
 const theme = useThemeVars();
 
-/** 2 列时按 axonhub gridAutoFlow:column + gridTemplateRows 竖向填充（01/02 在左列、后续溢到右列）。 */
+/** 2 列时按 gridAutoFlow:column + gridTemplateRows 竖向填充（01/02 在左列、后续溢到右列）。 */
 const gridStyle = computed(() =>
   props.columns === 2 ? { gridTemplateRows: `repeat(${Math.ceil(props.items.length / 2)}, auto)`, gridAutoFlow: 'column' as const } : undefined
 );

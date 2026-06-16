@@ -4,7 +4,7 @@ import { useEcharts } from '@/hooks/common/echarts';
 
 defineOptions({ name: 'PercentileCharts' });
 
-/** 响应延迟百分位 + 首字节延迟百分位（一比一 Aether 双 PercentileChart：按日 P50/P90/P99 三线）。 */
+/** 响应延迟百分位 + 首字节延迟百分位（双 PercentileChart：按日 P50/P90/P99 三线）。 */
 const props = defineProps<{
   rows: NexusAI.PercentileDayRow[];
   loading: boolean;

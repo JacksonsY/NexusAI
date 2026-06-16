@@ -152,7 +152,7 @@ async function save() {
         <NFormItem label="状态">
           <NSelect v-model:value="model.status" :options="STATUS_OPTIONS" />
         </NFormItem>
-        <NDivider title-placement="left" class="!text-12px !op-60">计费与限流（借鉴 Aether 提供商表单）</NDivider>
+        <NDivider title-placement="left" class="!text-12px !op-60">计费与限流（提供商表单）</NDivider>
         <NFormItem label="计费类型">
           <NSelect v-model:value="model.billingType" :options="BILLING_OPTIONS" />
         </NFormItem>

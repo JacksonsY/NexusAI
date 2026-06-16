@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 
 defineOptions({ name: 'LiveStatusCard' });
 
-/** 实时运行状态（一比一 Aether 性能分析实时区·tunnel 区映射为 nexusai 集群节点/并发槽）。 */
+/** 实时运行状态（性能分析实时区·tunnel 区映射为 nexusai 集群节点/并发槽）。 */
 const props = defineProps<{
   data: NexusAI.PerfLive | null;
   loading: boolean;
@@ -41,7 +41,7 @@ const healthText = computed(() => {
   return `${map[props.data.status] ?? props.data.status} · ${props.data.healthScore}/100`;
 });
 
-/** 6 实时汇总卡（一比一 Aether liveSummaryCards·tunnel 卡映射集群节点/并发槽）。 */
+/** 6 实时汇总卡（liveSummaryCards·tunnel 卡映射集群节点/并发槽）。 */
 const summaryCards = computed(() => {
   const d = props.data;
   return [
@@ -90,7 +90,7 @@ const summaryCards = computed(() => {
   ];
 });
 
-/** 降级切换进度条行（一比一 Aether fallbackRows：按量降序 + 占比条）。 */
+/** 降级切换进度条行（fallbackRows：按量降序 + 占比条）。 */
 const fallbackRows = computed(() => {
   const items = props.data?.fallbacks ?? [];
   const max = Math.max(...items.map(item => num(item.total)), 0);
@@ -154,7 +154,7 @@ function formatTime(value?: string) {
 
         <div class="grid grid-cols-1 gap-16px xl:grid-cols-3">
           <div class="grid grid-cols-1 gap-16px lg:grid-cols-2 xl:col-span-2">
-            <!-- 并发保护（当前节点 + 并发槽·映射 Aether 本机/全局） -->
+            <!-- 并发保护（当前节点 + 并发槽·映射 本机/全局） -->
             <section class="border border-gray-500/20 rounded-12px p-16px lg:col-span-2">
               <div class="flex items-center justify-between gap-12px">
                 <h3 class="m-0 text-13px font-semibold">并发保护</h3>
@@ -214,7 +214,7 @@ function formatTime(value?: string) {
               </div>
             </section>
 
-            <!-- 集群节点（映射 Aether 代理通道区） -->
+            <!-- 集群节点（映射 代理通道区） -->
             <section class="border border-gray-500/20 rounded-12px p-16px lg:col-span-2">
               <div class="flex items-center justify-between gap-12px">
                 <h3 class="m-0 text-13px font-semibold">集群节点</h3>

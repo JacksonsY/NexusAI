@@ -49,18 +49,18 @@ import { fmtCount, fmtMs, fmtTokens, fmtUsd, formatClientFamily, num } from './c
 
 defineOptions({ name: 'Usage' });
 
-/** 全局自动刷新间隔（一比一 Aether GLOBAL_AUTO_REFRESH_INTERVAL=3s） */
+/** 全局自动刷新间隔（GLOBAL_AUTO_REFRESH_INTERVAL=3s） */
 const AUTO_REFRESH_INTERVAL = 3000;
-/** 活跃请求轮询间隔（一比一 Aether AUTO_REFRESH_INTERVAL=1s·有活跃行时恒走） */
+/** 活跃请求轮询间隔（AUTO_REFRESH_INTERVAL=1s·有活跃行时恒走） */
 const ACTIVE_POLL_INTERVAL = 1000;
-/** 分析面板自动刷新最小间隔（一比一 Aether ADMIN_ANALYTICS_REFRESH_INTERVAL=60s） */
+/** 分析面板自动刷新最小间隔（ADMIN_ANALYTICS_REFRESH_INTERVAL=60s） */
 const ANALYTICS_REFRESH_INTERVAL = 60_000;
 const PAGE_SIZE_KEY = 'usage-page-size';
 const COLUMNS_KEY = 'usage-visible-columns-v2';
-/** 隐藏 unknown 持久化（一比一 Aether usage-hide-unknown-records） */
+/** 隐藏 unknown 持久化（usage-hide-unknown-records） */
 const HIDE_UNKNOWN_KEY = 'usage-hide-unknown-records';
 
-// ===== 筛选状态（一比一 Aether：时间范围 + 通用搜索在操作栏，其余筛选内嵌列头漏斗）=====
+// ===== 筛选状态（时间范围 + 通用搜索在操作栏，其余筛选内嵌列头漏斗）=====
 const dateRange = ref<[number, number] | null>(null);
 const search = ref('');
 const hideUnknown = ref(localStorage.getItem(HIDE_UNKNOWN_KEY) === 'true');
@@ -88,7 +88,7 @@ const rangeShortcuts: Record<string, [number, number]> = {
   近30天: [Date.now() - 30 * 86400_000, Date.now()]
 };
 
-/** 状态筛选（一比一 Aether status：流式/标准/活跃/失败/已取消/发生重试/发生转移） */
+/** 状态筛选（status：流式/标准/活跃/失败/已取消/发生重试/发生转移） */
 const statusFilterOptions = [
   { label: '流式', value: 'stream' },
   { label: '标准', value: 'standard' },
@@ -99,7 +99,7 @@ const statusFilterOptions = [
   { label: '发生转移', value: 'hasFallback' }
 ];
 
-/** API 格式筛选（一比一 Aether api_format） */
+/** API 格式筛选（api_format） */
 const apiFormatOptions = [
   { label: 'openai:chat', value: 'openai:chat' },
   { label: 'openai:embeddings', value: 'openai:embeddings' },
@@ -138,7 +138,7 @@ function buildFilters(): RequestLogFilters {
   return f;
 }
 
-// ===== 渠道映射（id → name·new-api 正例：批量映射不 JOIN）=====
+// ===== 渠道映射（id → name· 正例：批量映射不 JOIN）=====
 const channelMap = ref<Record<string, string>>({});
 async function loadChannels() {
   const { data, error } = await fetchChannels();
@@ -159,7 +159,7 @@ function channelLabel(channelId?: number | string | null): string {
   return channelMap.value[String(channelId)] || `渠道 #${channelId}`;
 }
 
-// ===== 用量分析面板（一比一 Aether：热图 + 间隔时间线 + 模型/渠道/API格式三聚合表）=====
+// ===== 用量分析面板（热图 + 间隔时间线 + 模型/渠道/API格式三聚合表）=====
 const heatmap = ref<NexusAI.UsageHeatmap | null>(null);
 const heatmapLoading = ref(false);
 async function loadHeatmap() {
@@ -296,7 +296,7 @@ function cancelExport() {
   exportProgress.show = false;
 }
 
-/** 间隔时间线小时窗（随时间范围预设联动·一比一 Aether getIntervalTimelineHours·钳 1~720） */
+/** 间隔时间线小时窗（随时间范围预设联动·getIntervalTimelineHours·钳 1~720） */
 const intervalHours = computed(() => {
   if (!dateRange.value) return 24;
   const hours = Math.ceil((dateRange.value[1] - dateRange.value[0]) / 3600_000);
@@ -308,7 +308,7 @@ const intervalTimelineTitle = computed(() => {
   return `请求间隔时间线（${win}）`;
 });
 
-// ===== 活跃请求（一比一 Aether /usage/active：进程内注册表·1s 轮询·完成后落库行接棒）=====
+// ===== 活跃请求（/usage/active：进程内注册表·1s 轮询·完成后落库行接棒）=====
 const activeRows = ref<NexusAI.ActiveRequest[]>([]);
 let knownActiveIds = new Set<string>();
 
@@ -380,7 +380,7 @@ async function loadRecords() {
     pageNum: pagination.page,
     pageSize: pagination.pageSize
   });
-  if (seq !== requestSeq) return; // 过期响应丢弃（Aether requestId 防竞态）
+  if (seq !== requestSeq) return; // 过期响应丢弃（requestId 防竞态）
   if (!error && data) {
     records.value = data.records || [];
     pagination.total = Number(data.total || 0);
@@ -388,7 +388,7 @@ async function loadRecords() {
   loading.value = false;
 }
 
-/** 表格数据源：活跃筛选=纯注册表行；第一页=活跃行置顶合并（去重·一比一 Aether 活跃行在列表内） */
+/** 表格数据源：活跃筛选=纯注册表行；第一页=活跃行置顶合并（去重·活跃行在列表内） */
 const displayRecords = computed<NexusAI.RequestLog[]>(() => {
   if (filters.resultKey === 'active') return activeAsRows.value;
   if (pagination.page === 1 && activeAsRows.value.length) {
@@ -410,7 +410,7 @@ function refreshAll() {
   loadAggregations();
 }
 
-// ===== 表格列（一比一 Aether 列序：时间/项目/模型/渠道/API格式/类型/Tokens/费用/性能/客户端/IP/UA）=====
+// ===== 表格列（列序：时间/项目/模型/渠道/API格式/类型/Tokens/费用/性能/客户端/IP/UA）=====
 function isSuccess(row: NexusAI.RequestLog): boolean {
   return (row.httpStatus ?? 0) < 400;
 }
@@ -419,7 +419,7 @@ function isCancelled(row: NexusAI.RequestLog): boolean {
   return row.usageSource === 'client-abort';
 }
 
-/** 输出速率 tokens/s（一比一 Aether formatOutputRate：输出 tokens ÷ 生成耗时） */
+/** 输出速率 tokens/s（formatOutputRate：输出 tokens ÷ 生成耗时） */
 function outputRate(row: NexusAI.RequestLog): string {
   const out = num(row.completionTokens);
   const dur = num(row.durationMs);
@@ -440,7 +440,7 @@ function startedAtMs(row: NexusAI.RequestLog): number | null {
   return Number.isNaN(t) ? null : t;
 }
 
-/** 类型徽章（一比一 Aether 优先级：失败 > 等待中 > 传输中 > 已取消 > 流式/标准） */
+/** 类型徽章（优先级：失败 > 等待中 > 传输中 > 已取消 > 流式/标准） */
 function renderStatusBadge(row: NexusAI.RequestLog) {
   if (row.liveStatus === 'pending') {
     return (
@@ -480,7 +480,7 @@ function renderStatusBadge(row: NexusAI.RequestLog) {
   );
 }
 
-/** 列头筛选项：项目（全量项目目录）/模型 从数据萃取（一比一 Aether available*） */
+/** 列头筛选项：项目（全量项目目录）/模型 从数据萃取（available*） */
 const projectMap = ref<Record<string, string>>({});
 async function loadProjects() {
   const { data, error } = await fetchProjects();
@@ -516,7 +516,7 @@ const clientFamilyFilterOptions = computed(() => {
   return [...set].sort().map(v => ({ label: formatClientFamily(v), value: v }));
 });
 
-/** 列头漏斗筛选（remote·一比一 Aether SortableTableHead 内嵌 TableFilterMenu）。 */
+/** 列头漏斗筛选（remote·SortableTableHead 内嵌 TableFilterMenu）。 */
 function onFiltersChange(state: DataTableFilterState) {
   const single = (v: unknown): string | null => {
     const raw = Array.isArray(v) ? v[0] : v;
@@ -531,7 +531,7 @@ function onFiltersChange(state: DataTableFilterState) {
   reload();
 }
 
-/** 全部列定义（一比一 Aether 管理员列序·筛选内嵌列头·无排序） */
+/** 全部列定义（管理员列序·筛选内嵌列头·无排序） */
 const allColumns = computed<DataTableColumns<NexusAI.RequestLog>>(() => [
   {
     title: '时间',
@@ -768,7 +768,7 @@ const allColumns = computed<DataTableColumns<NexusAI.RequestLog>>(() => [
   }
 ]);
 
-// ===== 列显示配置（一比一 Aether「显示列」MultiSelect·localStorage 持久化）=====
+// ===== 列显示配置（「显示列」MultiSelect·localStorage 持久化）=====
 const columnOptions = [
   { label: '时间', value: 'createDt' },
   { label: '项目', value: 'projectCode' },
@@ -783,7 +783,7 @@ const columnOptions = [
   { label: 'IP 地址', value: 'clientIp' },
   { label: 'User-Agent', value: 'userAgent' }
 ];
-/** 默认隐藏 UA 列（元数据列·一比一 Aether 默认不展开全部元数据列） */
+/** 默认隐藏 UA 列（元数据列·默认不展开全部元数据列） */
 const DEFAULT_COLUMNS = columnOptions.map(o => o.value).filter(v => v !== 'userAgent');
 
 function loadVisibleColumns(): string[] {
@@ -824,7 +824,7 @@ type DetailBundle = [
   Awaited<ReturnType<typeof fetchFailovers>>,
   Awaited<ReturnType<typeof fetchRequestBody>>
 ];
-/** 行按下预取（一比一 Aether @mousedown prefetchDetail·点击打开时即取即用） */
+/** 行按下预取（@mousedown prefetchDetail·点击打开时即取即用） */
 const prefetchCache = new Map<string, Promise<DetailBundle>>();
 
 function prefetchDetail(requestId?: string) {
@@ -863,7 +863,7 @@ function tryPretty(raw?: string | null): string {
   }
 }
 
-/** 刷新详情（一比一 Aether 头部刷新钮·绕过预取缓存重拉） */
+/** 刷新详情（头部刷新钮·绕过预取缓存重拉） */
 const detailRefreshing = ref(false);
 async function refreshDetail() {
   const requestId = detail.value?.request?.requestId;
@@ -881,12 +881,12 @@ async function refreshDetail() {
   detailRefreshing.value = false;
 }
 
-/** 元数据 Tab（一比一 Aether metadata：完整字段 JSON 视图） */
+/** 元数据 Tab（metadata：完整字段 JSON 视图） */
 const metadataJson = computed(() =>
   detail.value?.request ? JSON.stringify(detail.value.request, null, 2) : ''
 );
 
-/** 正文视图模式（一比一 Aether JSON↔对话视图切换·仅 body Tab） */
+/** 正文视图模式（JSON↔对话视图切换·仅 body Tab） */
 const bodyViewMode = ref<'json' | 'chat'>('json');
 
 /** 当前 Tab 的正文是否可渲染为对话（驱动切换钮显隐） */
@@ -902,7 +902,7 @@ const conversationAvailable = computed(() => {
   }
 });
 
-/** 请求头 Tab（一比一 Aether request-headers·懒加载 cURL 端点的上游脱敏 headers） */
+/** 请求头 Tab（request-headers·懒加载 cURL 端点的上游脱敏 headers） */
 const curlInfo = ref<{ url?: string; headers?: Record<string, string>; bodyCaptured?: boolean } | null>(null);
 const curlInfoLoading = ref(false);
 
@@ -920,7 +920,7 @@ function onDetailTabChange(tab: string) {
   bodyViewMode.value = 'json';
 }
 
-/** 复制 cURL 重放命令（一比一 Aether copyCurlCommand·1.5s 后恢复图标） */
+/** 复制 cURL 重放命令（copyCurlCommand·1.5s 后恢复图标） */
 async function copyCurl() {
   const requestId = detail.value?.request?.requestId;
   if (!requestId) return;
@@ -946,7 +946,7 @@ const rowProps = (row: NexusAI.RequestLog) => ({
   onClick: () => openDetail(row)
 });
 
-// ===== 自动刷新（一比一 Aether：图标钮=3s 全局 + 活跃行恒走 1s 轮询·页面可见才跑）=====
+// ===== 自动刷新（图标钮=3s 全局 + 活跃行恒走 1s 轮询·页面可见才跑）=====
 const autoRefresh = ref(false);
 let globalTimer: ReturnType<typeof setInterval> | null = null;
 let activeTimer: ReturnType<typeof setInterval> | null = null;
@@ -964,7 +964,7 @@ function syncGlobalTimer() {
   }
 }
 
-/** 活跃行轮询：有活跃行时恒走 1s（不受自动刷新开关控制·一比一 Aether 活跃行始终自刷新到终态） */
+/** 活跃行轮询：有活跃行时恒走 1s（不受自动刷新开关控制·活跃行始终自刷新到终态） */
 function syncActivePoll() {
   const need = activeRows.value.length > 0;
   if (need && !activeTimer) {
@@ -1024,7 +1024,7 @@ function onPageSizeChange(size: number) {
 </script>
 
 <template>
-  <!-- 普通文档流可滚动（一比一 Aether space-y/pb 文档流·勿用 overflow-hidden 一屏范式：分析面板超一屏会裁掉记录表） -->
+  <!-- 普通文档流可滚动（space-y/pb 文档流·勿用 overflow-hidden 一屏范式：分析面板超一屏会裁掉记录表） -->
   <div class="flex flex-col gap-12px pb-12px">
     <!-- 用量分析面板（常显·sub2api 摘要 4 卡 → 热图+间隔时间线 2 列 → 三分析卡 3 列） -->
       <!-- 摘要统计卡（sub2api UsageStatsCards 对位·grid 2/4 列） -->
@@ -1105,7 +1105,7 @@ function onPageSizeChange(size: number) {
         </NGridItem>
       </NGrid>
 
-    <!-- 使用记录卡（一比一 Aether TableCard：标题 + 时间范围|搜索|显示列|隐藏unknown|自动刷新 操作栏·筛选内嵌列头） -->
+    <!-- 使用记录卡（TableCard：标题 + 时间范围|搜索|显示列|隐藏unknown|自动刷新 操作栏·筛选内嵌列头） -->
     <NCard :bordered="false" size="small" class="card-wrapper">
       <template #header>
         <span class="text-16px font-medium">使用记录</span>
@@ -1186,7 +1186,7 @@ function onPageSizeChange(size: number) {
         </div>
       </template>
 
-      <!-- 移动端筛选网格（<sm·一比一 Aether 移动端 2 列筛选） -->
+      <!-- 移动端筛选网格（<sm·移动端 2 列筛选） -->
       <div class="mb-12px grid grid-cols-2 gap-8px sm:hidden">
         <NDatePicker
           v-model:value="dateRange"
@@ -1231,7 +1231,7 @@ function onPageSizeChange(size: number) {
         />
       </div>
 
-      <!-- 桌面表格（≥sm·一比一 Aether：筛选内嵌列头漏斗·无排序·活跃行置顶） -->
+      <!-- 桌面表格（≥sm·：筛选内嵌列头漏斗·无排序·活跃行置顶） -->
       <div class="hidden sm:block">
         <NDataTable
           remote
@@ -1246,7 +1246,7 @@ function onPageSizeChange(size: number) {
         />
       </div>
 
-      <!-- 移动端卡片视图（<sm·一比一 Aether mobile card） -->
+      <!-- 移动端卡片视图（<sm·mobile card） -->
       <div class="flex flex-col gap-8px sm:hidden">
         <NSpin :show="loading">
           <NEmpty v-if="!displayRecords.length && !loading" description="暂无请求记录" />
@@ -1287,7 +1287,7 @@ function onPageSizeChange(size: number) {
       </div>
     </NCard>
 
-    <!-- 详情抽屉（一比一 Aether RequestDetailDrawer：固定头部 → 失败卡 → 费用与性能卡 → 请求链路 → Tabs 卡） -->
+    <!-- 详情抽屉（RequestDetailDrawer：固定头部 → 失败卡 → 费用与性能卡 → 请求链路 → Tabs 卡） -->
     <NDrawer v-model:show="drawerVisible" :width="800" class="max-w-90vw">
       <NDrawerContent closable body-content-class="bg-gray-50 dark:bg-gray-900">
         <template #header>
@@ -1350,7 +1350,7 @@ function onPageSizeChange(size: number) {
         <NSpin :show="detailLoading">
           <template v-if="detail?.request">
             <div class="flex flex-col gap-12px">
-              <!-- 失败原因卡（一比一 Aether failureNotice 红卡） -->
+              <!-- 失败原因卡（failureNotice 红卡） -->
               <NAlert v-if="detail.request.errorCode || !isSuccess(detail.request)" type="error" title="请求失败">
                 <div class="text-sm">{{ detail.request.errorCode || `上游返回 HTTP ${detail.request.httpStatus}` }}</div>
                 <div class="mt-4px flex flex-wrap gap-4px">
@@ -1363,7 +1363,7 @@ function onPageSizeChange(size: number) {
                 </div>
               </NAlert>
 
-              <!-- 费用与性能概览卡（一比一 Aether：顶行 总费用|耗时|输出速度 → Token 计费高亮块） -->
+              <!-- 费用与性能概览卡（顶行 总费用|耗时|输出速度 → Token 计费高亮块） -->
               <NCard :bordered="false" size="small" class="card-wrapper">
                 <div class="flex flex-wrap items-center gap-x-8px gap-y-4px text-sm">
                   <span class="rounded-4px bg-gray-100 px-6px py-1px text-10px text-gray-400 dark:bg-gray-800">USD 计费</span>
@@ -1395,7 +1395,7 @@ function onPageSizeChange(size: number) {
                     {{ detail.request.usageSource }}
                   </NTag>
                 </div>
-                <!-- Token 计费明细（一比一 Aether 当前阶梯详细计算行式：标签左·数量右对齐） -->
+                <!-- Token 计费明细（当前阶梯详细计算行式：标签左·数量右对齐） -->
                 <div class="mt-8px border border-primary/30 rounded-8px bg-primary/5 p-12px">
                   <div class="token-row">
                     <span class="text-xs text-gray-400">输入</span>
@@ -1424,7 +1424,7 @@ function onPageSizeChange(size: number) {
                 </div>
               </NCard>
 
-              <!-- 请求链路追踪（一比一 Aether HorizontalRequestTimeline·横向节点流·hover 看原因） -->
+              <!-- 请求链路追踪（HorizontalRequestTimeline·横向节点流·hover 看原因） -->
               <NCard :bordered="false" size="small" class="card-wrapper">
                 <div class="mb-8px flex items-center gap-8px">
                   <span class="text-sm font-medium">请求链路追踪</span>
@@ -1435,7 +1435,7 @@ function onPageSizeChange(size: number) {
                 <RequestTimeline :request="detail.request" :chain="failoverChain" :channel-label="channelLabel" />
               </NCard>
 
-              <!-- Tabs 卡（一比一 Aether：请求体/响应体/元数据·工具栏 cURL(请求体)+复制） -->
+              <!-- Tabs 卡（请求体/响应体/元数据·工具栏 cURL(请求体)+复制） -->
               <NCard :bordered="false" size="small" class="card-wrapper">
                 <NTabs v-model:value="detailTab" type="line" size="small" @update:value="onDetailTabChange">
                   <template #suffix>

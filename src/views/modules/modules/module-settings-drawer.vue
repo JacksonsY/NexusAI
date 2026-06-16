@@ -5,7 +5,7 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import { fetchModuleSettings, runModuleAction, saveModuleSettings } from '@/service/api';
 
 /**
- * 模块设置抽屉（schema 驱动·Aether 模块配置页对位）：
+ * 模块设置抽屉（schema 驱动· 模块配置页对位）：
  * 顶部运行指标格 → 参数表单（number/bool 可写·readonly 启动配置只读展示）→
  * 热生效/重启级标签 → 底部"查看监控"链接（adminRoute）。
  */

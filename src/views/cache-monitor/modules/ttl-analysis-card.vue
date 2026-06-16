@@ -7,7 +7,7 @@ import { fetchIntervalTimeline } from '@/service/api/usage';
 import { useEcharts } from '@/hooks/common/echarts';
 
 /**
- * TTL 分析卡（一比一 Aether CacheMonitoring TTL 分析区·项目维度）：
+ * TTL 分析卡（CacheMonitoring TTL 分析区·项目维度）：
  * 时间段选择 + 缓存命中概览网格 + 项目 TTL 分析表（频率/推荐 TTL/说明）+
  * 展开行请求间隔散点图（按间隔分档着色）。
  */
@@ -31,7 +31,7 @@ const expandedProject = ref<string | null>(null);
 const timelineLoading = ref(false);
 const timelinePoints = ref<{ x: string; y: number; model?: string }[]>([]);
 
-/** 间隔分档着色（一比一 Aether INTERVAL_COLORS 五档） */
+/** 间隔分档着色（INTERVAL_COLORS 五档） */
 function intervalColor(minutes: number): string {
   if (minutes <= 5) return 'rgba(34, 197, 94, 0.6)';
   if (minutes <= 15) return 'rgba(59, 130, 246, 0.6)';
@@ -155,7 +155,7 @@ defineExpose({ reload: load });
       />
     </div>
 
-    <!-- 缓存命中概览（一比一 Aether 5 格·USD 口径） -->
+    <!-- 缓存命中概览（5 格·USD 口径） -->
     <div v-if="hit" class="grid grid-cols-2 mb-12px gap-16px border border-gray-100 rounded-8px bg-gray-50 p-16px md:grid-cols-5 dark:border-gray-800 dark:bg-gray-900">
       <div>
         <div class="text-xs text-gray-400">请求命中率</div>
