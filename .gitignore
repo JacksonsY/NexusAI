@@ -1,0 +1,46 @@
+# ===== 构建产物 =====
+target/
+build/target/
+dist/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ===== 依赖 =====
+node_modules/
+.pnpm-store/
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.swp
+
+# ===== 环境 / 密钥（绝不提交） =====
+.env
+.env.*
+*.local
+*.pem
+*.key
+
+# ===== 日志 / 临时 =====
+*.log
+logs/
+*.tmp
+.DS_Store
+
+# ===== 文档：仅保留根 README.md，其余 *.md（内部文档/规范/进度/审计）一律不提交 =====
+*.md
+!/README.md
+
+# ===== 内部协作 / 元数据 =====
+AGENTS.md
+.framework-sync.json
+.codex/
+.claude/
+
+# 单 jar 内置控制台前端构建产物（由 nexusai-admin-ui 构建拷入·不入库）
+nexusai-server-starter/src/main/resources/admin/

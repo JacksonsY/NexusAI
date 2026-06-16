@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-persistence-log-template</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-persistence-log-template</name>
+    <description>日志域抽象：RequestLogStore SPI + 领域模型（RequestLogRecord/Query/Page/统计 VO）。纯净·无 MyBatis/JDBC，供各存储 driver 实现。</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

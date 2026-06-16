@@ -1,0 +1,30 @@
+# 项目统一代码格式配置（后端 Java/XML/SQL/YAML/Properties；IDE/编辑器自动遵循）。
+# 前端 nexusai-admin-ui/ 有独立 .editorconfig（indent 2·root=true）。参考 Alibaba Java 开发规约。
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = space
+
+# Java：4 空格缩进，单行 ≤160（Alibaba 规约 ≤120 软约束，本项目放宽到 160）
+[*.java]
+indent_size = 4
+max_line_length = 160
+
+# 建表脚本 / Maven / Spring XML
+[*.{xml,sql}]
+indent_size = 4
+
+# 配置文件
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.properties]
+indent_size = 2
+
+# Markdown 保留行尾（换行语义）
+[*.md]
+trim_trailing_whitespace = false

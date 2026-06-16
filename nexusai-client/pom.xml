@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-client</artifactId>
+    <packaging>pom</packaging>
+    <name>nexusai-client</name>
+    <description>外部业务面 Client 聚合；业务面系统只依赖 starter 与 contract，不依赖网关运行时。</description>
+
+    <modules>
+        <module>nexusai-client-starter</module>
+    </modules>
+</project>

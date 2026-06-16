@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-persistence-log</artifactId>
+    <packaging>pom</packaging>
+    <name>nexusai-persistence-log</name>
+    <description>日志存储域【聚合 pom】：请求日志存储 driver 可插拔（template 抽象 SPI + mysql/pg/clickhouse driver·store 三选一·选谁日志全量落谁·非冷热分层/无热→冷搬运）</description>
+
+    <modules>
+        <!-- 抽象：RequestLogStore SPI + 领域模型（无 MyBatis/JDBC 依赖） -->
+        <module>nexusai-persistence-log-template</module>
+        <!-- 独立连接基座：日志库独立 DataSource+SqlSessionFactory（缺省回退主源） -->
+        <module>nexusai-persistence-log-datasource</module>
+        <!-- 存储 driver（默认·store=mysql）：MyBatis-Plus + nai_request_log（MySQL） -->
+        <module>nexusai-persistence-log-mysql</module>
+        <!-- 存储 driver（store=pg）：MyBatis-Plus + nai_request_log（PostgreSQL·分位/分桶 PG 方言） -->
+        <module>nexusai-persistence-log-pg</module>
+        <!-- 分析 driver：ClickHouse JDBC（quantile 分位/时序聚合） -->
+        <module>nexusai-persistence-log-clickhouse</module>
+        <!-- 请求体分离：独立 body 库（hash 默认/rdb gzip） -->
+        <module>nexusai-persistence-log-body</module>
+    </modules>
+</project>

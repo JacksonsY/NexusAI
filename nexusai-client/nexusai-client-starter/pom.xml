@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-client-starter</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-client-starter</name>
+    <description>控制面 Client SDK（业务面导入）：NexusAiAdminClient 经 NexusAI-Admin-Token 调网关控制面端点
+        （KeySync、QuotaOperation）。零网关反应堆依赖·仅 spring-web RestClient。
+    </description>
+
+    <!--
+      ⚠️ 本模块住业务面·非数据面反应堆成员：绝不依赖反应堆模块（common/persistence/billing/gateway/control），
+      否则会把整个网关运行时拖进 业务面。唯一豁免 = nexusai-contract（纯 wire 记录·零传递依赖），
+      它消灭了此前 client/model 与 server 端 DTO 的双份复制。仅另需 spring-web（RestClient 同步阻塞·契合 业务面 servlet）+ jackson + 自动装配。
+      UsageEvent 用量回传是网关→业务面 经 Redis Stream 单向回传（非本 SDK 职责·业务面 侧消费者订阅）。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-contract</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

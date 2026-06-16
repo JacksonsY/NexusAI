@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-control</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-control</name>
+    <description>控制面单 jar（单 jar 按域分包）：HTTP 接口、安全鉴权、M2M 入口与控制面域逻辑。
+        包结构 control.api（控制面 server 端 + admin 会话/项目令牌安全）+ control.domain.{consumer 租户自助·routing 渠道路由运维·platform 平台运营·governance 治理·monitor 观测}；
+        域依赖单向无环靠包纪律守（非 Maven 模块墙）。控制面恒 HTTP（不引 gRPC）。</description>
+
+    <dependencies>
+        <!-- ===== 内部模块（域依赖去重并集） ===== -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-common</artifactId>
+        </dependency>
+        <!-- 共享 wire 记录（控制面 server 端 receiver 的 KeySyncRequest/QuotaOpRequest） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-contract</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-relational</artifactId>
+        </dependency>
+        <!-- 用量/观测查询经 RequestLogStore SPI 读请求日志 -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-log-template</artifactId>
+        </dependency>
+        <!-- Quota/Usd 强闸门 + 价格规整（预扣/价格读取需要 QuotaLedger·UsdAmount·UsdRate） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-billing</artifactId>
+        </dependency>
+        <!-- 流量面实时并发指标（性能分析页·RelayInflightMetrics） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-observe</artifactId>
+        </dependency>
+        <!-- 运行时观测/复活：账号池打分·健康熔断(router) + 并发槽(limit) + 计费(billing) -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-router</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-limit</artifactId>
+        </dependency>
+        <!-- 异步任务管理动作（取消任务复用 TaskService.markFailed 幂等终态闸门+退款） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-task</artifactId>
+        </dependency>
+        <!-- SPI 注册表只读（模块管理页 /admin/modules 暴露 Provider 描述符） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-provider</artifactId>
+        </dependency>
+
+        <!-- ===== Spring / 第三方 ===== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <!-- SMTP 邮件通道（通知服务·内置工具「邮件配置」） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <!-- Sa-Token 权限认证（WebFlux 反应式集成）：控制台账号密码登录会话；M2M 项目令牌仍直通 -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-reactor-spring-boot3-starter</artifactId>
+            <version>1.44.0</version>
+        </dependency>
+        <!-- 契约端点的 RTopic 广播 + 幂等键（RedissonClient/RBucket/RTopic） -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- 渠道余额查询结果缓存 + 治理域本地缓存 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

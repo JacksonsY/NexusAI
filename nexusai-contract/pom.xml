@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-contract</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-contract</name>
+    <description>共享 wire 记录层（单一真理源）：KeySync、QuotaOperation 与 UsageEvent 的 wire 记录。纯 Java 记录·零传递依赖（仅 JDK）——
+        数据面反应堆与 client SDK 都可安全依赖。
+        ⚠️ 铁律：绝不引入任何依赖（Spring/Jackson/MyBatis/反应堆），否则会污染 client SDK 的最小依赖面。</description>
+
+    <!-- 零依赖：本模块只放纯 wire 记录。任何 import 都视为污染（client SDK 住 业务面·必须保持最小依赖面）。 -->
+</project>

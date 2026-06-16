@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-example</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-example</name>
+    <description>最小接入示例 / 冒烟（流量面 /v1/chat/completions 闭环 + 控制面 client-starter SDK 接入）</description>
+
+    <dependencies>
+        <!-- 只依赖 client-starter（瘦 SDK·内部仅挂 nexusai-contract）：本模块编译即证明 业务面 侧能脱离反应堆消费 SDK -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-client-starter</artifactId>
+        </dependency>
+    </dependencies>
+</project>

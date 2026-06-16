@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-server-starter</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-server-starter</name>
+    <description>可执行入口（main + application.yml + Dockerfile）= 供未来 业务面 薄壳依赖的 server-starter 制品</description>
+
+    <dependencies>
+        <!-- 编排层 relay（传递引入 protocol/provider/router/billing/limit/observe/task + common/persistence + webflux/redisson/mybatis-plus） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-relay</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-observe</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-task</artifactId>
+        </dependency>
+        <!-- 控制面单 jar（admin 会话 + 项目管理 + 控制面 server 端 receiver + 全控制面域逻辑·纯组件扫描装配） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-control</artifactId>
+        </dependency>
+        <!-- 日志库独立连接基座（nexusai.log.datasource.enabled 切独立/主源） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-log-datasource</artifactId>
+        </dependency>
+        <!-- 日志域存储 driver（按 nexusai.log.store 三选一激活·都上 classpath 供条件装配·选谁日志全量落谁·非冷热分层：mysql/pg/clickhouse） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-log-mysql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-log-pg</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-log-clickhouse</artifactId>
+        </dependency>
+        <!-- 请求体分离 store（独立库·hash 默认/rdb 独立库） -->
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-log-body</artifactId>
+        </dependency>
+        <!-- ============ 运行时框架（编译期·MyBatis 分页插件 + actuator 健康端点） ============ -->
+        <!-- MP 3.5.9+ 分页插件 PaginationInnerInterceptor 已拆出 jsqlparser，独立引入 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ============ 数据库驱动依赖 ＝ 各库官方 JDBC SDK ============ -->
+        <!-- MySQL 驱动（业务主库 + 日志热库默认后端·必用） -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- PostgreSQL 驱动（关系库方言移植备选·db.type=postgresql 或 log.store=pg 时用；纯 MySQL 部署可注释瘦身） -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- ClickHouse 驱动（日志分析后端·仅 nexusai.log.store=clickhouse 部署需要·约 +15MB fat jar；不用 CH 可整体注释这三项瘦身）：
+             非 shaded clickhouse-jdbc + http-client + httpclient5（:all uber-jar 会在 fat jar 下 ClickHouseDriver.<clinit> 找不到内部 client 类）。 -->
+        <dependency>
+            <groupId>com.clickhouse</groupId>
+            <artifactId>clickhouse-jdbc</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.clickhouse</groupId>
+            <artifactId>clickhouse-http-client</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- clickhouse-http-client 0.6.x 运行时需 Apache HttpClient5（其 pom 标 optional 不传递）·版本随 SB BOM -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <!-- 仅对 banner.txt 开启资源过滤（spring-boot parent 用 @...@ 分隔符，构建期烤入版本，
+             不影响 application.yml 里 Spring 运行时解析的 ${...} 占位符）。 -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>banner.txt</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>banner.txt</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.nexusai.NexusAiApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                            <!-- 生成 META-INF/build-info.properties → 暴露 BuildProperties（启动日志显示真实版本） -->
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

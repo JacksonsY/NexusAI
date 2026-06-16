@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 独立反应堆：parent = spring-boot-starter-parent 3.5.x -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.13</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.nexusai</groupId>
+    <artifactId>nexusai</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+    <name>nexusai</name>
+    <description>OpenAI 兼容 AI 中转/计费转发网关（纯转发面；商业功能归 业务面，经 HTTP + Redis Stream 对接）</description>
+
+    <properties>
+        <revision>0.0.1-SNAPSHOT</revision>
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 覆盖 SB 默认 lombok：1.18.38 不兼容 JDK 25，提到 1.18.44（环境为 JDK 25） -->
+        <lombok.version>1.18.44</lombok.version>
+        <!-- 第三方版本（SB BOM 未管理的） -->
+        <mybatis-plus.version>3.5.14</mybatis-plus.version>
+        <redisson.version>3.52.0</redisson.version>
+        <hutool.version>5.8.43</hutool.version>
+        <!-- ClickHouse JDBC 驱动（日志分析后端·SB BOM 未含·仅 store=clickhouse 部署需要·驱动在 server-starter 声明） -->
+        <clickhouse.version>0.6.5</clickhouse.version>
+    </properties>
+
+    <modules>
+        <module>nexusai-common</module>
+        <!-- 共享 wire 记录层（单一真理源·零依赖纯记录·server 反应堆与 client SDK 共用） -->
+        <module>nexusai-contract</module>
+        <module>nexusai-persistence</module>
+        <!-- 数据面运行时聚合（下挂 9 个独立能力模块·非胖模块） -->
+        <module>nexusai-gateway</module>
+        <!-- 控制面单 jar（按域分包）：API/security + domain，承载 admin 会话、项目管理与控制面 server 端 -->
+        <module>nexusai-control</module>
+        <!-- 控制面 Client SDK 聚合（业务面/业务面 导入·零网关反应堆依赖） -->
+        <module>nexusai-client</module>
+        <module>nexusai-example</module>
+        <module>nexusai-server-starter</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- ===== 内部模块（版本随反应堆） ===== -->
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-common</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <!-- 共享 wire 记录层（零依赖·client SDK 唯一可安全依赖的内部模块） -->
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-contract</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <!-- 持久化分域（聚合 nexusai-persistence 下：关系域 + 日志域 template/mysql/clickhouse driver） -->
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-persistence-relational</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-persistence-log-template</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-persistence-log-datasource</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-persistence-log-mysql</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-persistence-log-pg</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-persistence-log-clickhouse</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-persistence-log-body</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <!-- 数据面运行时（gateway 聚合下 9 个独立能力模块） -->
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-protocol</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-provider</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-router</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-billing</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-runtime</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-limit</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-observe</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-auth</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-task</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-relay</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <!-- 控制面单 jar（内部按 api + domain.{consumer,routing,platform,governance,monitor} 分包） -->
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-control</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-example</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <!-- 外部控制面接入 SDK（瘦 client·内部仅挂 contract·供 业务面 HTTP+M2M 接入） -->
+            <dependency>
+                <groupId>com.nexusai</groupId>
+                <artifactId>nexusai-client-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- ===== 第三方（SB BOM 未含） ===== -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-core</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <!-- ClickHouse 官方 JDBC 驱动（非 shaded·避免 :all uber-jar 在 spring-boot fat jar 下 ClickHouseDriver.<clinit> 找不到内部 client 类）。
+                 仅在 server-starter「数据库驱动依赖」分区引用（runtime）·driver 代码模块不绑驱动。httpclient5 由 SB BOM 管理。 -->
+            <dependency>
+                <groupId>com.clickhouse</groupId>
+                <artifactId>clickhouse-jdbc</artifactId>
+                <version>${clickhouse.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.clickhouse</groupId>
+                <artifactId>clickhouse-http-client</artifactId>
+                <version>${clickhouse.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- JDK 23+ 默认不再运行 classpath 上的注解处理器，必须显式声明 lombok 到 annotationProcessorPaths -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <!-- ${revision} CI-friendly：构建期原生解析；install/deploy 时由 flatten 产出干净 pom（P 阶段再启用） -->
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-persistence-log-clickhouse</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-persistence-log-clickhouse</name>
+    <description>日志域分析 driver：ClickHouse + MyBatis-Plus（DbType.CLICK_HOUSE·独立 SqlSessionFactory）实现 RequestLogStore；分位/时序用 CH 原生 quantile()/toStartOfHour() 裸 SQL。JDBC 驱动为纯 runtime 依赖(代码只用字符串类名)，由 server-starter「数据库驱动依赖」分区统一提供，本模块不绑驱动。</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-log-template</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- ================ MyBatis 框架依赖（编译期 import·本模块只含 ClickHouse 方言实现代码） ================ -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- 分页插件 PaginationInnerInterceptor(DbType.CLICK_HOUSE) 依赖 jsqlparser -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+        </dependency>
+
+        <!-- ⚠️ ClickHouse JDBC 驱动(clickhouse-jdbc/http-client/httpclient5)刻意不在此声明：
+             driver 代码仅用字符串类名 "com.clickhouse.jdbc.ClickHouseDriver"（见 ClickHouseLogProperties）经 Hikari 反射加载，
+             编译期不 import 驱动类 → 驱动是纯 runtime 依赖，统一由 nexusai-server-starter「数据库驱动依赖」分区提供
+             （对齐分层纪律：驱动归装配层 starter，方言实现归 driver 代码模块，互不混入）。 -->
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

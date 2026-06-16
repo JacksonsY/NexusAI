@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>com.nexusai</groupId><artifactId>nexusai</artifactId><version>${revision}</version><relativePath>../../pom.xml</relativePath></parent>
+    <artifactId>nexusai-runtime</artifactId><packaging>jar</packaging><name>nexusai-runtime</name>
+    <!-- 数据面运行时配置挡读（nai_system_config 5s Caffeine 热读·写侧在 control-domain/platform/system）。
+         独立模块收容运行时状态，供 router/relay/control-domain 共用，避免把 router 当公共杂物间。 -->
+    <dependencies>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-persistence-relational</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies></project>

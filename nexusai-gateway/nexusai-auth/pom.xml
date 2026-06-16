@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>com.nexusai</groupId><artifactId>nexusai</artifactId><version>${revision}</version><relativePath>../../pom.xml</relativePath></parent>
+    <artifactId>nexusai-auth</artifactId><packaging>jar</packaging><name>nexusai-auth</name>
+    <description>入站身份认证能力：sk- API Key 与 JWT 校验 SPI（AuthenticationProvider 及其实现），令牌检索与缓存（ApiKeyAuthService）。
+        边缘 WebFilter 留在 relay，仅经此 SPI 完成鉴权——data plane 与 control plane 共享同一套令牌真理源。</description>
+    <dependencies>
+        <dependency><groupId>com.nexusai</groupId><artifactId>nexusai-common</artifactId></dependency>
+        <dependency><groupId>com.nexusai</groupId><artifactId>nexusai-persistence-relational</artifactId></dependency>
+        <dependency><groupId>com.nexusai</groupId><artifactId>nexusai-observe</artifactId></dependency>
+        <dependency><groupId>org.redisson</groupId><artifactId>redisson-spring-boot-starter</artifactId></dependency>
+        <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId></dependency>
+        <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
+        <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId></dependency>
+        <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><scope>provided</scope></dependency>
+    </dependencies>
+</project>

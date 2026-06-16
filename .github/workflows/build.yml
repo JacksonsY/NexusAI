@@ -1,0 +1,99 @@
+name: build-jar
+
+# 单 jar 构建：拉子模块前端(admin/web) → pnpm 构建 → dist 拷入 classpath:/admin/ → mvn 打可执行 jar
+on:
+  push:
+    tags: ['v*', '[0-9]*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 递归拉取子模块（nexusai-admin-ui → 同仓库 admin/web 分支）
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # ---- 前端：构建控制台 dist ----
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: nexusai-admin-ui/pnpm-lock.yaml
+
+      - name: Build frontend console
+        working-directory: nexusai-admin-ui
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # dist 拷入 server-starter 静态目录（classpath:/admin/·gitignore·CI 即时生成）
+      - name: Bundle console into backend resources
+        run: |
+          DEST=nexusai-server-starter/src/main/resources/admin
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+          cp -R nexusai-admin-ui/dist/. "$DEST"/
+          echo "bundled $(find "$DEST" -type f | wc -l) files"
+
+      # ---- 后端：打可执行 jar ----
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Maven package
+        run: mvn -B -ntp clean package -DskipTests
+
+      # 产物带版本号（tag 名；手动触发用分支名）：nexusai-server-<ref>.jar
+      - name: Name jar with version
+        run: cp nexusai-server-starter/target/nexusai-server-starter.jar "nexusai-server-${{ github.ref_name }}.jar"
+
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexusai-server-${{ github.ref_name }}
+          path: nexusai-server-${{ github.ref_name }}.jar
+          if-no-files-found: error
+
+      # 打 tag 时把 jar 发到 GitHub Release（手动 workflow_dispatch 不触发）
+      - name: Publish to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: NexusAI ${{ github.ref_name }}
+          files: nexusai-server-${{ github.ref_name }}.jar
+          body: |
+            ## NexusAI — 独立 Java 反应式 AI 中转网关
+
+            Spring Boot 3.5 + WebFlux（Netty）构建的纯转发面 AI 网关：OpenAI 兼容协议互转、强闸门计量、渠道/密钥池路由，内置 Naive UI 控制台。
+
+            **能力概览**
+            - 数据面 `/v1/**`：OpenAI 兼容中转，多协议互转（OpenAI / Anthropic / Gemini / Bedrock / Vertex）
+            - 计量计费：USD 微元整数强闸门（freeze→settle 多退少补），用量经 Redis Stream 回传业务面
+            - 路由：渠道两级选号 + 密钥池打分/熔断/并发槽 + 会话亲和
+            - 控制面 `/admin/**`：渠道·模型·密钥·项目·用量·健康·性能监控
+            - 内置控制台 `/nexusai`：单 jar 自带前端，无需单独部署
+
+            **运行**
+            ```bash
+            java -jar nexusai-server-starter.jar
+            # 控制台 http://localhost:8600/nexusai/  （默认 admin/admin123）
+            ```
+            依赖 MySQL 8+/PostgreSQL 与 Redis，首次用 `script/sql` 初始化库；生产请用环境变量覆盖账密与 AES 密钥。
+
+            ---
+            本制品由 CI 自动构建：拉取前端子模块 → pnpm 构建 → 打入 jar → `mvn package`。

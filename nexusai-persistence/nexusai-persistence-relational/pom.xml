@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-persistence-relational</artifactId>
+    <packaging>jar</packaging>
+    <name>nexusai-persistence-relational</name>
+    <description>关系存储域（MySQL OLTP）：控制面/业务 nai_ 表实体 + Mapper（com.nexusai.persistence.{po,mapper}·单后端不套 template/driver）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nexusai</groupId>
+            <artifactId>nexusai-common</artifactId>
+        </dependency>
+        <!-- MyBatis 框架（编译期）·JDBC 驱动(mysql-connector-j/postgresql)为 runtime 依赖，由 server-starter「数据库驱动依赖」分区统一提供，本模块不绑驱动 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

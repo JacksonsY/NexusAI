@@ -1,0 +1,162 @@
+server:
+  port: ${SERVER_PORT:8600}
+
+spring:
+  application:
+    name: nexusai
+  # 数据面 = WebFlux（Netty）；持久层 MyBatis(JDBC) 阻塞调用在 boundedElastic 执行
+  datasource:
+    # ① MySQL（默认）。② 部署到 PostgreSQL：注释下面 MySQL 三行、放开 PG 三行，并把 nexusai.db.type 改 postgresql，库用 script/sql/postgres/nexusai_pg.sql 初始化。
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:nexusai}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # --- PostgreSQL 备选（方言移植·二选一）---
+    # url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:nexusai}
+    # username: ${DB_USERNAME:postgres}
+    # password: ${DB_PASSWORD:postgres}
+    # driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
+      # 有密码时用环境变量启用下一行（空串会误触发 AUTH，故默认不设）：
+      # password: ${REDIS_PASSWORD}
+  codec:
+    max-in-memory-size: 16MB
+  # 单 jar 内置控制台：前端 dist 打进 classpath:/admin/（目录名 admin 仅是 classpath 位置·与 snail-ai 同）。
+  # 静态资源服务在根（/index.html、/assets/**）；浏览器带的 /nexusai 前缀由 ConsolePrefixStripFilter 剥离后再到这里。
+  web:
+    resources:
+      static-locations: classpath:/admin/
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: assign_id
+
+nexusai:
+  # ① 业务库方言（关系域单后端·部署时二选一）：mysql（默认）/ postgresql。决定主源 MyBatis-Plus 分页方言，须与 spring.datasource 一致。
+  db:
+    type: ${NEXUSAI_DB_TYPE:mysql}
+  # 日志域（三库分离对齐：业务库 / 日志库 log-dsn / 请求体库 log-body-dsn·三者独立）
+  log:
+    # ② 日志 driver（store·三选一·@ConditionalOnProperty）：mysql（默认·MyBatis）/ pg（PostgreSQL）/ clickhouse
+    store: ${NEXUSAI_LOG_STORE:mysql}
+    # ③ 日志库独立连接（log-dsn）：enabled=true 时 nai_request_log 走独立 DataSource（与业务库物理分离）；
+    #    缺省 enabled=false = 回退主业务源（向后兼容·等于改造前）。日志写入量是业务几十上百倍，生产强烈建议独立库/实例。
+    datasource:
+      enabled: ${LOG_DB_ENABLED:false}
+      url: ${LOG_DB_URL:jdbc:mysql://127.0.0.1:3306/nexusai_log?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+      username: ${LOG_DB_USERNAME:root}
+      password: ${LOG_DB_PASSWORD:root}
+      driver-class-name: ${LOG_DB_DRIVER:com.mysql.cj.jdbc.Driver}
+      pool-size: ${LOG_DB_POOL:8}
+      dialect: ${LOG_DB_DIALECT:mysql}            # 日志库方言独立于业务 db.type（mysql/postgresql）
+    # ④ 请求体分离（log-body-dsn）：hash（默认·不存只 sha256）/ rdb（独立库 nai_request_body·gzip）/ oss（P2）
+    body:
+      store: ${LOG_BODY_STORE:rdb}
+      collect: ${LOG_BODY_COLLECT:true}           # 全局采集开关（对齐 CF cf-aig-collect-log-payload）·请求+响应双采（流式聚合钳 5MB）
+      gzip: ${LOG_BODY_GZIP:true}
+      datasource:                                 # body.store=rdb 时（第三个独立连接·本地开发同库）
+        url: ${LOG_BODY_DB_URL:jdbc:mysql://127.0.0.1:3306/nexusai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+        username: ${LOG_BODY_DB_USERNAME:root}
+        password: ${LOG_BODY_DB_PASSWORD:root}
+        driver-class-name: ${LOG_BODY_DB_DRIVER:com.mysql.cj.jdbc.Driver}
+        pool-size: ${LOG_BODY_DB_POOL:4}
+    # ⑤ 日志分表（log-sharding·按时间滚动分表·默认关）：enable + mode=d/w/m/y；不做冷热搬运 pipeline（用户决定）
+    sharding:
+      enable: ${LOG_SHARDING_ENABLE:false}
+      mode: ${LOG_SHARDING_MODE:month}            # day/week/month/year；过期分表直接 DROP（比 DELETE 快几个数量级）
+  admin:
+    # 契约①③④ M2M 接入：令牌不再单值静态，改 nai_project 接入项目表（控制台账密登录自举创建·project）。
+    # 控制台账号密码登录（生产<b>必须</b>用环境变量覆盖默认密码）
+    username: ${NEXUSAI_ADMIN_USERNAME:admin}
+    password: ${NEXUSAI_ADMIN_PASSWORD:admin123}
+  crypto:
+    # 上游凭证 AES-256-GCM 版本化密钥（32 字节 Base64）。生产<b>必须</b>由环境变量注入，禁明文。
+    # active-key-id 指定当前加密所用 keyId（密文格式 keyId:cipher）；keys 多密钥并存供轮转/灰度。
+    active-key-id: ${NEXUSAI_CRYPTO_ACTIVE:v1}
+    keys:
+      v1: ${NEXUSAI_CRYPTO_KEY:}
+  # 安全：可信代理。解析真实客户端 IP 时<b>仅</b>信任来自这些 CIDR/IP 的 X-Forwarded-For（防伪造头绕过 Key IP 白名单/全局 IP 黑名单）。
+  # 留空 = 不信任任何 XFF，只用直连对端 IP。部署在 Nginx/LB 后<b>必须</b>配为其内网地址段（逗号分隔），否则真实 IP 取不到。
+  security:
+    trusted-proxies: ${NEXUSAI_TRUSTED_PROXIES:}
+  # JWT 入站认证（默认关·业界短期令牌取代静态 sk- 趋势）。开启后客户端可持 HS256 JWT（claim 含 sk-）调 /v1/**，
+  # 网关验签+exp 后取 key-claim 委托 sk- 认证（复用全部 Key 策略）。secret 为 HS256 共享密钥（生产用环境变量注入）。
+  auth:
+    jwt:
+      enabled: ${NEXUSAI_JWT_ENABLED:false}
+      secret: ${NEXUSAI_JWT_SECRET:}
+      key-claim: ${NEXUSAI_JWT_KEY_CLAIM:key}
+  # 热路径本地缓存（Caffeine 短 TTL）。失效：TTL 兜底 + 本进程 CONFIG 事件 / 契约① TOKEN 事件。
+  cache:
+    token:                       # API Key 鉴权（by key_hash·仅元数据·余额走 Redis）
+      ttl-seconds: ${CACHE_TOKEN_TTL:60}
+      max-size: ${CACHE_TOKEN_MAX:10000}
+    # 路由热数据缓存（ability/channel/key-pool）：失效以本进程 CONFIG 事件清空为主、TTL 兜底。
+    ability:                     # 第一级渠道选择 nai_ability（group|model）
+      ttl-seconds: ${CACHE_ABILITY_TTL:300}
+      max-size: ${CACHE_ABILITY_MAX:5000}
+    channel:                     # 渠道实体 by id
+      ttl-seconds: ${CACHE_CHANNEL_TTL:300}
+      max-size: ${CACHE_CHANNEL_MAX:2000}
+    key-pool:                    # 第二级渠道密钥列表（仅含配置·运行时熔断态已分离到 RoutingHealthStat·与上者同 TTL）
+      ttl-seconds: ${CACHE_KEYPOOL_TTL:300}
+      max-size: ${CACHE_KEYPOOL_MAX:2000}
+  # 账号池四层选号（①锚定→②粘性→③打分→④并发槽）
+  pool:
+    anchor:                      # ①锚定：一致性哈希环把会话亲和键确定性映射到某 Key（冷启动同 Key 命中 prompt cache）
+      strategy: ${POOL_ANCHOR_STRATEGY:consistent-hash}  # consistent-hash 启用 / none 关闭（回退纯打分）
+      vnodes: ${POOL_ANCHOR_VNODES:160}                  # 每 Key 虚拟节点数（越大分布越均匀）
+    sticky:                      # ②粘性：上次成功 Key 短记忆（更具体优先于①锚定）
+      ttl-seconds: ${POOL_STICKY_TTL:300}
+      max-size: ${POOL_STICKY_MAX:50000}
+  # 幂等去重（评审 H3·防网络重发双扣 credits）
+  idempotent:
+    # 显式 Idempotency-Key 头去重的结果缓存窗口秒数（客户端携带该头时生效）
+    ttl-seconds: ${IDEMPOTENT_TTL:600}
+    # body-hash 自动去重窗口秒数：默认 5s 跨实例挡网络层重发双扣（settle 门闩仅进程内拦不住落不同实例的重发）；
+    # 同一 token 窗口内字节级相同 body 视为重复（tokenId+sha256(body) 组合键·Redis 热路径）；0=关闭
+    auto-dedup-seconds: ${IDEMPOTENT_AUTO_DEDUP:5}
+  # 异步任务轮询（MJ/视频·永不用重型分布式调度器）
+  task:
+    poller:
+      # leader（默认）：Redisson 锁单实例轮询；claim：多实例 FOR UPDATE SKIP LOCKED 行认领横扩(需 MySQL 8.0.1+/MariaDB 10.6+)
+      # ⚠️ poll_lease_until 列两种模式都必须存在(PO 字段进默认 SELECT)，存量库务必 ALTER 补列
+      mode: ${TASK_POLLER_MODE:leader}
+      # 租约/leader 锁 TTL 秒数：须 > 单轮(leader)/单任务(claim)处理耗时；到期自动可重领/易主
+      lease-seconds: ${TASK_POLLER_LEASE:30}
+
+# Sa-Token（WebFlux 反应式）：令牌从 NexusAI-Admin-Token 头读取·会话默认内存存储(重启失效·M2M 静态令牌不受影响)
+sa-token:
+  token-name: NexusAI-Admin-Token
+  # 关闭框架启动 banner（不在控制台打印第三方品牌字样/网址）
+  is-print: false
+  is-read-cookie: false
+  is-read-header: true
+  is-read-body: false
+  timeout: 43200
+  active-timeout: -1
+  token-style: uuid
+  is-log: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  # 纯文本 pattern + 全类名 + 级别分文件 + 异步队列（./data/log/nexusai/{info,warn,error}/）
+  config: classpath:logback-boot.xml
+  level:
+    com.nexusai: ${LOG_LEVEL:INFO}

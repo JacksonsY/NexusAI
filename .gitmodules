@@ -1,0 +1,4 @@
+[submodule "nexusai-admin-ui"]
+	path = nexusai-admin-ui
+	url = https://github.com/JacksonsY/NexusAI.git
+	branch = admin/web

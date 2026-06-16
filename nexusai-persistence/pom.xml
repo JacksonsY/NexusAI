@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-persistence</artifactId>
+    <packaging>pom</packaging>
+    <name>nexusai-persistence</name>
+    <description>持久化层【聚合 pom】按存储能力域分域：relational(MySQL OLTP) + log(请求日志·store 三选一可替换后端 template/driver·非冷热分层)</description>
+
+    <modules>
+        <!-- 关系存储域：控制面/业务 nai_ 表（MySQL 单后端） -->
+        <module>nexusai-persistence-relational</module>
+        <!-- 日志存储域：请求日志（template + mysql/pg/clickhouse 可替换 driver·store 三选一·非冷热分层） -->
+        <module>nexusai-persistence-log</module>
+    </modules>
+</project>

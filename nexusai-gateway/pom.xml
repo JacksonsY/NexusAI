@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.nexusai</groupId>
+        <artifactId>nexusai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>nexusai-gateway</artifactId>
+    <packaging>pom</packaging>
+    <name>nexusai-gateway</name>
+    <description>数据面运行时聚合：10 个独立能力模块（协议/Provider/路由/计费/限流/可观测/异步/运行时配置/鉴权/编排）归集于此，
+        各保持独立模块边界（非胖模块）；包名 com.nexusai.{protocol,provider,router,billing,limit,observe,task,runtime,auth,relay}。</description>
+
+    <modules>
+        <module>nexusai-protocol</module>
+        <module>nexusai-provider</module>
+        <module>nexusai-runtime</module>
+        <module>nexusai-router</module>
+        <module>nexusai-billing</module>
+        <module>nexusai-limit</module>
+        <module>nexusai-observe</module>
+        <module>nexusai-auth</module>
+        <module>nexusai-task</module>
+        <module>nexusai-relay</module>
+    </modules>
+</project>
