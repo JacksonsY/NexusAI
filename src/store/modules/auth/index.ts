@@ -2,7 +2,7 @@ import { computed, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useLoading } from '@sa/hooks';
-import { fetchAdminLogin, fetchAdminLogout } from '@/service/api';
+import { fetchAdminLogin, fetchAdminLogout, fetchAdminUserInfo } from '@/service/api';
 import { useRouterPush } from '@/hooks/common/router';
 import { localStg } from '@/utils/storage';
 import { SetupStoreId } from '@/enum';
@@ -136,12 +136,32 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     });
   }
 
-  function initUserInfo() {
+  /**
+   * 拉取当前登录用户信息（借鉴 snail-ai-admin 的 getUserInfo）。
+   * 兼作服务端 Sa-Token 会话校验：令牌有效 → 灌入用户信息返回 true；令牌过期/被吊销 → 返回 false。
+   */
+  async function getUserInfo() {
+    const { data, error } = await fetchAdminUserInfo();
+
+    if (!error && data?.username) {
+      setAdminUserInfo(data.username);
+      return true;
+    }
+
+    return false;
+  }
+
+  async function initUserInfo() {
     const maybeToken = getToken();
 
     if (maybeToken) {
       token.value = maybeToken;
-      setAdminUserInfo(); // nexusai：token 即超管，刷新不再调 /user（无该端点）
+      // nexusai：token 即超管，但重进时仍向后端校验会话（过期/吊销则踢回登录页）
+      const pass = await getUserInfo();
+
+      if (!pass) {
+        await resetStore();
+      }
     }
   }
 

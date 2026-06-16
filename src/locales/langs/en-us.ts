@@ -302,6 +302,7 @@ const local: App.I18n.Schema = {
     modules: 'Modules',
     settings: 'Settings',
     'access-keys': 'Access Keys',
+    'admin-users': 'Admin Users',
     protocols: 'Protocols',
     'key-sync': 'Key Sync',
     'email-settings': 'Email Settings',

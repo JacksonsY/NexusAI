@@ -21,6 +21,7 @@ declare module "@elegant-router/types" {
     "404": "/404";
     "500": "/500";
     "access-keys": "/access-keys";
+    "admin-users": "/admin-users";
     "async-tasks": "/async-tasks";
     "audit-logs": "/audit-logs";
     "cache-monitor": "/cache-monitor";
@@ -80,6 +81,7 @@ declare module "@elegant-router/types" {
     | "404"
     | "500"
     | "access-keys"
+    | "admin-users"
     | "async-tasks"
     | "audit-logs"
     | "cache-monitor"
@@ -126,6 +128,7 @@ declare module "@elegant-router/types" {
     | "iframe-page"
     | "login"
     | "access-keys"
+    | "admin-users"
     | "async-tasks"
     | "audit-logs"
     | "cache-monitor"

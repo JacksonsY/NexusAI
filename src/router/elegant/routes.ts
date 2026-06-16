@@ -49,6 +49,17 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'admin-users',
+    path: '/admin-users',
+    component: 'layout.base$view.admin-users',
+    meta: {
+      title: 'admin-users',
+      i18nKey: 'route.admin-users',
+      icon: 'carbon:user-admin',
+      order: 1
+    }
+  },
+  {
     name: 'async-tasks',
     path: '/async-tasks',
     component: 'layout.base$view.async-tasks',

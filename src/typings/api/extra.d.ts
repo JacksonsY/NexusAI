@@ -1409,3 +1409,28 @@ declare namespace NexusAI {
     createDt?: string;
   }
 }
+
+declare namespace NexusAI {
+  /** 控制台运维账号（双身份·借鉴 snail-ai 用户管理）。 */
+  interface AdminUser {
+    id?: number | string;
+    username?: string;
+    /** 1 项目运维 / 2 超管 */
+    role?: number;
+    /** 1 启用 / 0 停用 */
+    status?: number;
+    /** 项目运维被授权的项目码（超管为空=全项目） */
+    projects?: string[];
+    createDt?: string;
+    [key: string]: unknown;
+  }
+
+  /** 新建/更新运维账号入参（更新时 password 省略·走单独重置接口）。 */
+  interface AdminUserUpsert {
+    username?: string;
+    password?: string;
+    role?: number;
+    status?: number;
+    projects?: string[];
+  }
+}

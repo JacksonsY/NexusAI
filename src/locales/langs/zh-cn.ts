@@ -298,6 +298,7 @@ const local: App.I18n.Schema = {
     modules: '模块管理',
     settings: '系统设置',
     'access-keys': '访问密钥',
+    'admin-users': '运维账号',
     protocols: '协议中心',
     'key-sync': 'Key 同步',
     'email-settings': '邮件配置',

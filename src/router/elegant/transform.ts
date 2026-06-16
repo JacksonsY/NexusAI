@@ -167,6 +167,7 @@ const routeMap: RouteMap = {
   "404": "/404",
   "500": "/500",
   "access-keys": "/access-keys",
+  "admin-users": "/admin-users",
   "async-tasks": "/async-tasks",
   "audit-logs": "/audit-logs",
   "cache-monitor": "/cache-monitor",

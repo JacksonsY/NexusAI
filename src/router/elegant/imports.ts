@@ -21,6 +21,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   "iframe-page": () => import("@/views/_builtin/iframe-page/[url].vue"),
   login: () => import("@/views/_builtin/login/index.vue"),
   "access-keys": () => import("@/views/access-keys/index.vue"),
+  "admin-users": () => import("@/views/admin-users/index.vue"),
   "async-tasks": () => import("@/views/async-tasks/index.vue"),
   "audit-logs": () => import("@/views/audit-logs/index.vue"),
   "cache-monitor": () => import("@/views/cache-monitor/index.vue"),
