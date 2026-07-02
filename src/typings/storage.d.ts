@@ -16,8 +16,6 @@ declare namespace StorageType {
     token: string;
     /** Fixed sider with mix-menu */
     mixSiderFixed: CommonType.YesOrNo;
-    /** The refresh token */
-    refreshToken: string;
     /** The theme color */
     themeColor: string;
     /** The dark mode */
@@ -39,5 +37,18 @@ declare namespace StorageType {
     };
     /** The last login user id */
     lastLoginUserId: string;
+    /** nexusai · Usage 页每页条数 */
+    'usage-page-size': number;
+    /** nexusai · Usage 页可见列 key 列表 */
+    'usage-visible-columns-v2': string[];
+    /** nexusai · Usage 页隐藏 unknown 记录开关 */
+    'usage-hide-unknown-records': boolean;
+    /** nexusai · 运维监控页本地偏好（结构对齐 OpsPageSettings） */
+    'nexusai-ops-settings': {
+      showTokenStats: boolean;
+      showAlertEvents: boolean;
+      showConcurrency: boolean;
+      autoRefreshSeconds: number;
+    };
   }
 }

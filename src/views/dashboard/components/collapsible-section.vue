@@ -20,7 +20,8 @@ const props = withDefaults(defineProps<Props>(), { defaultOpen: false });
 
 const theme = useThemeVars();
 
-const open = useStorage(`nexusai-dash-section-${props.storageKey}`, props.defaultOpen);
+// 与 localStg 同前缀命名（VITE_STORAGE_PREFIX=NEXUSAI_）·避免裸键跨域串扰
+const open = useStorage(`${import.meta.env.VITE_STORAGE_PREFIX}dash-section-${props.storageKey}`, props.defaultOpen);
 </script>
 
 <template>

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://nexusai.local/schema/framework-sync.json",
+  "description": "nexusai-admin-ui 二开治理清单：登记上游、接缝(seams)与框架改动(overrides)，供上游升级时逐条比对回合。人工维护。",
+  "upstream": {
+    "name": "soybean-admin",
+    "repo": "https://github.com/soybeanjs/soybean-admin",
+    "learningSample": "snail-ai-admin",
+    "note": "上游为纯净模板；本仓 = 上游二开。升级上游时以本文件的 seams/overrides 为准逐条 rebase，勿整包覆盖。"
+  },
+  "runtime": {
+    "gatewayPort": 8600,
+    "prodBasePath": "/nexusai",
+    "prodBasePathNote": "单 jar 内置前端时挂子路径 /nexusai；相对 base 需在前端拼绝对地址（见 install-cli-dialog）。",
+    "build": "pnpm build = vite build --mode prod（不过 vue-tsc·类型错误不阻断构建）"
+  },
+  "zones": {
+    "blue": {
+      "label": "🟦 框架原码",
+      "rule": "只 import 不改。需要定制先考虑能否用 .env / props / slot 覆盖，避免直接改。"
+    },
+    "yellow": {
+      "label": "🟨 必改接缝",
+      "rule": "与后端契约强绑定的集成点，保留我方逻辑。改动登记在 seams。"
+    },
+    "green": {
+      "label": "🟩 新增",
+      "rule": "本项目新代码放视图本地 views/<视图>/{components,composables,modules} 与 service/api/*；勿散落进框架目录。"
+    }
+  },
+  "seams": [
+    {
+      "path": "src/service/request/",
+      "files": ["index.ts", "shared.ts", "type.ts"],
+      "reason": "请求层接缝：注入 NexusAI-Admin-Token 头、后端 code/msg/data 包络解析、401 静默重置、超时/登出码处理。"
+    },
+    {
+      "path": "src/store/modules/auth/",
+      "files": ["index.ts", "shared.ts"],
+      "reason": "认证接缝：账密登录 → Sa-Token 会话；resetStore 防重入+按 token 存在与否吊销会话；无独立用户体系(账号即超管)。"
+    },
+    {
+      "path": "src/store/modules/theme/",
+      "files": ["index.ts", "shared.ts"],
+      "reason": "主题接缝：保留我方品牌色/默认主题设置与覆盖标记。"
+    },
+    {
+      "path": "src/plugins/loading.ts",
+      "files": ["loading.ts"],
+      "reason": "首屏 loading 接缝：品牌化启动动画/配色。"
+    }
+  ],
+  "overrides": [
+    {
+      "path": "src/hooks/common/table.ts",
+      "reason": "整体重写 useTable：适配 apiFn/apiParams 风格 + 后端 {records,total} 分页口径 + naive-ui 列助手。"
+    },
+    {
+      "path": "src/hooks/common/router.ts",
+      "reason": "路由跳转封装本地化(登录跳转/回跳目标)。"
+    },
+    {
+      "path": "src/layouts/modules/global-footer/index.vue",
+      "reason": "页脚品牌信息本地化。"
+    },
+    {
+      "path": "src/layouts/modules/global-header/components/user-avatar.vue",
+      "reason": "顶栏用户头像/菜单适配 nexusai 账号体系(账号即超管·登出走 resetStore)。"
+    },
+    {
+      "path": "src/components/common/system-logo.vue",
+      "reason": "系统 Logo 品牌化(NexusAI)。"
+    },
+    {
+      "path": "src/components/advanced/table-header-operation.vue",
+      "reason": "表头操作区本地化(列显隐/刷新等交互文案与行为)。"
+    }
+  ],
+  "maintenance": {
+    "detectionNote": "overrides 为人工登记，非自动生成，可能不完全。改动框架原码时须在此追加登记。",
+    "heuristic": "框架目录(hooks/layouts/components/router/plugins)内出现中文注释或偏离上游行为，通常即为本地改动。"
+  }
+}

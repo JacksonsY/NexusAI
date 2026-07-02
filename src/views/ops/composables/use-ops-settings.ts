@@ -1,4 +1,6 @@
-/** 运维监控页面本地偏好（sub2api OpsSettingsDialog 对位·localStorage 持久化）。 */
+/** 运维监控页面本地偏好（sub2api OpsSettingsDialog 对位·走 localStg 持久化·自动带 NEXUSAI_ 前缀）。 */
+import { localStg } from '@/utils/storage';
+
 export interface OpsPageSettings {
   showTokenStats: boolean;
   showAlertEvents: boolean;
@@ -13,15 +15,11 @@ export function defaultOpsSettings(): OpsPageSettings {
 }
 
 export function loadOpsSettings(): OpsPageSettings {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...defaultOpsSettings(), ...JSON.parse(raw) };
-  } catch {
-    // 损坏即重置
-  }
-  return defaultOpsSettings();
+  // localStg.get 内部已 JSON 解析 + 损坏值返回 null（无需再 try/catch）
+  const saved = localStg.get(STORAGE_KEY);
+  return saved ? { ...defaultOpsSettings(), ...saved } : defaultOpsSettings();
 }
 
 export function saveOpsSettings(settings: OpsPageSettings) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  localStg.set(STORAGE_KEY, settings);
 }

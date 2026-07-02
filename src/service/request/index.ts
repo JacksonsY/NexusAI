@@ -10,9 +10,7 @@ const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === '
 const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 
 type BackendResponseData = {
-  status?: unknown;
   code?: unknown;
-  message?: unknown;
   msg?: unknown;
 };
 
@@ -20,30 +18,28 @@ type BackendResponse = {
   data?: BackendResponseData;
 };
 
-/** 后端统一响应：业务码取 status（兼容 code）。 */
+/** 后端统一响应：业务码取 code（后端真实字段 code/msg/data·code=200 成功）。 */
 const getResponseCode = (response: BackendResponse) => {
   const d = response?.data;
   if (!d) return '';
-  const code = d.status ?? d.code;
+  const { code } = d;
   if (code === undefined || code === null) return '';
   return String(code).trim();
 };
 
-/** 后端统一响应：消息取 message（兼容 msg）。 */
+/** 后端统一响应：消息取 msg。 */
 const getResponseMessage = (response: BackendResponse) => {
   const d = response?.data;
   if (!d) return '';
-  const message = d.message ?? d.msg;
-  if (message === undefined || message === null) return '';
-  return String(message).trim();
+  const { msg } = d;
+  if (msg === undefined || msg === null) return '';
+  return String(msg).trim();
 };
 
 export const request = createFlatRequest(
   {
     baseURL,
-    headers: {
-      timeout: 6000
-    },
+    timeout: 6000,
     paramsSerializer: {
       indexes: null // 使用 arr=1&arr=2 格式而不是 arr[0]=1&arr[1]=2
     }
@@ -55,7 +51,6 @@ export const request = createFlatRequest(
     transform(response: AxiosResponse<App.Service.Response<any>>) {
       const d = response.data;
       if (!d) return undefined;
-      if (d.total !== undefined && d.total !== null) return d;
       return (d as { data?: unknown }).data;
     },
     async onRequest(config) {
@@ -113,7 +108,11 @@ export const request = createFlatRequest(
       // 会话失效/未登录（HTTP 401·如后端重启丢内存会话）：静默重置登录态回登录页，
       // 避免首屏并发请求每个各弹一条错误（resetStore 幂等，多次触发无害）
       if (error.response?.status === 401) {
-        useAuthStore().resetStore();
+        // 登出接口自身 401 不再触发 resetStore（否则死循环：401→resetStore→打登出→登出又 401→…）
+        const failedUrl = error.config?.url || '';
+        if (!failedUrl.includes('/admin/logout')) {
+          useAuthStore().resetStore();
+        }
         return;
       }
       let message = error.message;

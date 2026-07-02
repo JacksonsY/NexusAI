@@ -97,7 +97,6 @@ export function useTable<T = any>(config: {
 
   async function getData() {
     loading.value = true;
-    console.log('[useTable] getData 调用，searchParams:', JSON.parse(JSON.stringify(searchParams)));
     try {
       const response = await apiFn(searchParams);
 

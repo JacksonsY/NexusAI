@@ -38,6 +38,7 @@ import { fetchFailovers, fetchRequestDetail } from '@/service/api/observe';
 import { fetchChannels } from '@/service/api/channel';
 import { fetchProjects } from '@/service/api/project';
 import SvgIcon from '@/components/custom/svg-icon.vue';
+import { localStg } from '@/utils/storage';
 import ActivityHeatmapCard from './modules/activity-heatmap-card.vue';
 import ConversationView from './modules/conversation-view.vue';
 import JsonPanel from './modules/json-panel.vue';
@@ -63,7 +64,7 @@ const HIDE_UNKNOWN_KEY = 'usage-hide-unknown-records';
 // ===== 筛选状态（时间范围 + 通用搜索在操作栏，其余筛选内嵌列头漏斗）=====
 const dateRange = ref<[number, number] | null>(null);
 const search = ref('');
-const hideUnknown = ref(localStorage.getItem(HIDE_UNKNOWN_KEY) === 'true');
+const hideUnknown = ref(localStg.get(HIDE_UNKNOWN_KEY) ?? false);
 const filters = reactive<{
   projectCode: string | null;
   channelId: number | null;
@@ -367,7 +368,7 @@ const loading = ref(false);
 const records = ref<NexusAI.RequestLog[]>([]);
 const pagination = reactive({
   page: 1,
-  pageSize: Number(localStorage.getItem(PAGE_SIZE_KEY)) || 20,
+  pageSize: localStg.get(PAGE_SIZE_KEY) || 20,
   total: 0
 });
 let requestSeq = 0;
@@ -787,14 +788,11 @@ const columnOptions = [
 const DEFAULT_COLUMNS = columnOptions.map(o => o.value).filter(v => v !== 'userAgent');
 
 function loadVisibleColumns(): string[] {
-  try {
-    const saved = JSON.parse(localStorage.getItem(COLUMNS_KEY) || 'null');
-    if (Array.isArray(saved)) {
-      const valid = saved.filter(v => columnOptions.some(o => o.value === v));
-      if (valid.length) return valid;
-    }
-  } catch {
-    /* 忽略损坏的持久化值 */
+  // localStg.get 内部已 JSON 解析 + 损坏值返回 null（无需再 try/catch）
+  const saved = localStg.get(COLUMNS_KEY);
+  if (Array.isArray(saved)) {
+    const valid = saved.filter(v => columnOptions.some(o => o.value === v));
+    if (valid.length) return valid;
   }
   return DEFAULT_COLUMNS;
 }
@@ -803,7 +801,7 @@ const visibleColumnKeys = ref<string[]>(loadVisibleColumns());
 function onColumnsChange(keys: string[]) {
   if (!keys.length) return; // 至少保留一列
   visibleColumnKeys.value = keys;
-  localStorage.setItem(COLUMNS_KEY, JSON.stringify(keys));
+  localStg.set(COLUMNS_KEY, keys);
 }
 
 const columns = computed(() =>
@@ -990,7 +988,7 @@ function toggleAutoRefresh() {
 
 function toggleHideUnknown() {
   hideUnknown.value = !hideUnknown.value;
-  localStorage.setItem(HIDE_UNKNOWN_KEY, String(hideUnknown.value));
+  localStg.set(HIDE_UNKNOWN_KEY, hideUnknown.value);
   reload();
 }
 
@@ -1018,7 +1016,7 @@ function onPageChange(p: number) {
 function onPageSizeChange(size: number) {
   pagination.pageSize = size;
   pagination.page = 1;
-  localStorage.setItem(PAGE_SIZE_KEY, String(size));
+  localStg.set(PAGE_SIZE_KEY, size);
   loadRecords();
 }
 </script>

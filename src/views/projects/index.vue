@@ -4,7 +4,7 @@ import { refDebounced } from '@vueuse/core';
 import { NButton, NDropdown, useThemeVars } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
 import { useTable } from '@/hooks/common/table';
-import { fetchProjects, fetchProjectToken, fetchRotateProjectToken, fetchUpdateProject } from '@/service/api';
+import { fetchProjects, fetchRotateProjectToken, fetchUpdateProject } from '@/service/api';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import ProjectSearch from './modules/project-search.vue';
 import ProjectOperateDrawer from './modules/project-operate-drawer.vue';
@@ -17,21 +17,8 @@ defineOptions({ name: 'Projects' });
 const appStore = useAppStore();
 const theme = useThemeVars();
 
-// 令牌按需揭示（眼睛切换·明文随时可看 + 复制）
+// 令牌一次性明文（仅创建/轮转当次可见并复制；令牌哈希化后不再支持按需揭示·列表默认打码）
 const revealedTokens = ref<Record<number, string>>({});
-
-async function toggleReveal(row: NexusAI.Project) {
-  const id = row.id!;
-  if (revealedTokens.value[id]) {
-    const { [id]: _, ...rest } = revealedTokens.value;
-    revealedTokens.value = rest;
-    return;
-  }
-  const { data, error } = await fetchProjectToken(id);
-  if (!error && data) {
-    revealedTokens.value = { ...revealedTokens.value, [id]: data };
-  }
-}
 
 async function copyText(text: string) {
   await navigator.clipboard?.writeText(text);
@@ -87,13 +74,11 @@ const { loading, data, columns, columnChecks, pagination, mobilePagination, getD
       key: 'token',
       width: 230,
       render: (r: NexusAI.Project) => {
+        // plain 仅在本次创建/轮转后当场可见（哈希化令牌不可再查明文）；否则展示后端打码标识
         const plain = revealedTokens.value[r.id!];
         return (
           <div class="flex items-center gap-4px">
             <span class={`break-all font-mono text-12px tabular-nums ${plain ? '' : 'op-60'}`}>{plain ?? r.token}</span>
-            <NButton size="tiny" quaternary aria-label={plain ? '隐藏令牌' : '查看令牌'} onClick={() => toggleReveal(r)}>
-              <SvgIcon icon={plain ? 'lucide:eye-off' : 'lucide:eye'} class="text-14px" />
-            </NButton>
             {plain && (
               <NButton size="tiny" quaternary aria-label="复制令牌" onClick={() => copyText(plain)}>
                 <SvgIcon icon="lucide:copy" class="text-14px" />

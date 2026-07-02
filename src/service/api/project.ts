@@ -11,11 +11,7 @@ export function fetchAddProject(data: NexusAI.Project) {
 export function fetchUpdateProject(id: number | string, data: NexusAI.Project) {
   return request<void>({ url: `/admin/projects/${id}`, method: 'put', data });
 }
-/** 查看明文令牌（按需揭示·列表默认打码）。 */
-export function fetchProjectToken(id: number | string) {
-  return request<string>({ url: `/admin/projects/${id}/token` });
-}
-/** 轮转令牌：旧 token 立即失效·返回明文新 token。 */
+/** 轮转令牌：旧 token 立即失效·返回明文新 token（令牌哈希化后·明文仅创建/轮转当次一次性返回）。 */
 export function fetchRotateProjectToken(id: number | string) {
   return request<string>({ url: `/admin/projects/${id}/rotate-token`, method: 'post' });
 }

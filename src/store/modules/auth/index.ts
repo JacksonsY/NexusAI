@@ -38,23 +38,35 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   /** Is login */
   const isLogin = computed(() => Boolean(token.value));
 
+  /** resetStore 防重入标志：401 并发 / 登出接口自身再 401 时，避免重复登出与重复回登录页 */
+  let isResetting = false;
+
   /** Reset auth store */
   async function resetStore() {
-    // 登出尽力吊销服务端 Sa-Token 会话（best-effort·失败不阻断本地清理）
-    fetchAdminLogout().catch(() => {});
+    if (isResetting) return;
+    isResetting = true;
 
-    recordUserId();
+    try {
+      // 仅当本地仍存令牌时才尽力吊销服务端 Sa-Token 会话（无令牌=已登出·跳过避免空打登出接口再触发 401）
+      if (getToken()) {
+        fetchAdminLogout().catch(() => {});
+      }
 
-    clearAuthStorage();
+      recordUserId();
 
-    authStore.$reset();
+      clearAuthStorage();
 
-    if (!route.meta.constant) {
-      await toLogin();
+      authStore.$reset();
+
+      if (!route.meta.constant) {
+        await toLogin();
+      }
+
+      tabStore.cacheTabs();
+      routeStore.resetStore();
+    } finally {
+      isResetting = false;
     }
-
-    tabStore.cacheTabs();
-    routeStore.resetStore();
   }
 
   /** Record the user ID of the previous login session Used to compare with the current user ID on next login */

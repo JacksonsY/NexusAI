@@ -22,7 +22,18 @@ const systemOptions = [
   { label: 'Windows (PowerShell)', value: 'windows' }
 ];
 
-const baseUrl = (import.meta.env.VITE_SERVICE_BASE_URL as string) || `${window.location.protocol}//${window.location.hostname}:8600`;
+/**
+ * CLI 命令要能直接执行 → base 必须是绝对地址。
+ * 相对子路径（prod 单 jar 前端挂 /nexusai）按当前站点 origin 补全为绝对 URL；已是绝对 URL（http(s) 开头）直用；空则兜底直连网关 8600。
+ */
+function resolveBaseUrl() {
+  const raw = ((import.meta.env.VITE_SERVICE_BASE_URL as string) || '').trim();
+  if (!raw) return `${window.location.protocol}//${window.location.hostname}:8600`;
+  const abs = /^https?:\/\//i.test(raw) ? raw : new URL(raw, window.location.origin).href;
+  return abs.replace(/\/+$/, '');
+}
+
+const baseUrl = resolveBaseUrl();
 
 const command = computed(() => {
   const isWin = system.value === 'windows';
