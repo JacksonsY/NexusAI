@@ -34,6 +34,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.util.concurrent.Queues;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.client.HttpClientRequest;
 
@@ -82,6 +83,11 @@ public class UpstreamExchange {
     private static final int MAX_CONCURRENT_DRAINS = 256;
     /** drain 并发闸（全实例共享·acquire 后启动上游订阅·终态 doFinally 归还）。 */
     private static final Semaphore DRAIN_PERMITS = new Semaphore(MAX_CONCURRENT_DRAINS);
+    /**
+     * 流式镜像 Sink 缓冲上限（chunk 数）：慢客户端（TCP 零窗但不断连）下，无界 buffer 会把整条剩余上游流堆进堆内存。
+     * 上游 SSE chunk 多为 KB 级，4096 chunk ≈ 数 MB/连接封顶；溢出即判慢客户端、中止下行（drain 照旧保计费）。
+     */
+    private static final int MIRROR_BUFFER_CHUNKS = 4096;
 
     private final OutboundProxyClients outboundProxyClients;
     private final ModuleToggles moduleToggles;
@@ -133,7 +139,24 @@ public class UpstreamExchange {
 
     /** 响应缓存租户边界：项目码（缺则空串）。同项目内相同 model+body 才共享缓存·绝不跨项目。 */
     private static String cacheScope(RelayContext ctx) {
-        return ctx.getToken() != null && ctx.getToken().getProjectCode() != null ? ctx.getToken().getProjectCode() : "";
+        String project = ctx.getToken() != null && ctx.getToken().getProjectCode() != null ? ctx.getToken().getProjectCode() : "";
+        // 🔴 path 纳入 scope：防同 body/model 的不同端点互相命中缓存（/v1/audio/speech vs /v1/chat；
+        // /v1/responses vs /v1/responses/compact 等同体异语义端点）。get/put 同源，键自然含 path。
+        return project + "|" + (ctx.getPath() == null ? "" : ctx.getPath());
+    }
+
+    /** 响应是否 JSON（首个非空白字节为 { 或 [）：缓存命中恒以 application/json 回放，故仅缓存 JSON 响应（TTS 等二进制不缓存）。 */
+    private static boolean looksJson(byte[] body) {
+        if (body == null) {
+            return false;
+        }
+        for (byte b : body) {
+            if (b == ' ' || b == '\n' || b == '\r' || b == '\t') {
+                continue;
+            }
+            return b == '{' || b == '[';
+        }
+        return false;
     }
 
     // ===== 上游调用 =====
@@ -244,7 +267,8 @@ public class UpstreamExchange {
                         byte[] out = maybeConvertResponse(ctx, bytes);               // P4：上游格式→客户端格式
                         // 响应缓存写（C 类·成功非流式·命中下次短路省上游+USD 额度）
                         ResponseCache cache = activeResponseCache();
-                        if (cache != null && (ctx.getUpstreamStatus() == null || ctx.getUpstreamStatus() < 400)) {
+                        // 仅缓存 JSON 响应（命中恒以 application/json 回放·二进制如 TTS 音频不缓存·防错误 Content-Type）
+                        if (cache != null && (ctx.getUpstreamStatus() == null || ctx.getUpstreamStatus() < 400) && looksJson(out)) {
                             cache.put(cacheScope(ctx), ctx.getPeek().model(), ctx.getBody(), out);
                         }
                         DataBuffer buf = response.bufferFactory().wrap(out);
@@ -269,7 +293,9 @@ public class UpstreamExchange {
     public Mono<Void> writeError(ServerHttpResponse response, Throwable ex) {
         GatewayErrorCode ec = (ex instanceof GatewayException ge)
                 ? ge.getErrorCode() : GatewayErrorCode.INTERNAL_ERROR;
-        String detail = ex.getMessage() == null ? ec.getMessage() : ex.getMessage();
+        // 🔴 仅 GatewayException（面向调用方的预期错误）回吐其 message；INTERNAL_ERROR（凭证解密/JDBC/NPE 等内部细节）
+        // 一律回固定文案，明细仅落日志——防内部实现/渠道配置状态经 message 外泄，辅助攻击者探测网关结构。
+        String detail = (ex instanceof GatewayException && ex.getMessage() != null) ? ex.getMessage() : ec.getMessage();
         if (ec == GatewayErrorCode.INTERNAL_ERROR) {
             log.error("relay 内部错误", ex);
         }
@@ -311,7 +337,9 @@ public class UpstreamExchange {
                                        Supplier<byte[]> tail,
                                        Runnable onDrainComplete) {
         DataBufferFactory ff = response.bufferFactory();
-        Sinks.Many<byte[]> mirror = Sinks.many().unicast().onBackpressureBuffer();
+        // 有界缓冲（MIRROR_BUFFER_CHUNKS）：慢客户端不再无界堆积；满则 tryEmitNext 回 FAIL_OVERFLOW（下方判慢客户端中止）
+        Sinks.Many<byte[]> mirror = Sinks.many().unicast()
+                .onBackpressureBuffer(Queues.<byte[]>get(MIRROR_BUFFER_CHUNKS).get());
         AtomicBoolean drained = new AtomicBoolean(false);
         Runnable settleOnce = () -> {
             if (drained.compareAndSet(false, true)) {
@@ -340,7 +368,13 @@ public class UpstreamExchange {
                                 markFirstByte(ctx);
                                 byte[] out = transform.apply(toBytes(buf));
                                 if (out != null && out.length > 0) {
-                                    mirror.tryEmitNext(out);   // 客户端已断时返回 FAIL_CANCELLED 静默丢弃，usage 已在 transform 累计
+                                    // 客户端已断时返回 FAIL_CANCELLED 静默丢弃，usage 已在 transform 累计
+                                    Sinks.EmitResult emit = mirror.tryEmitNext(out);
+                                    if (emit == Sinks.EmitResult.FAIL_OVERFLOW) {
+                                        // 慢客户端：镜像缓冲满 → 中止下行（客户端拿到截断流），但继续 drain 上游保计费
+                                        ctx.setStreamAborted(true);
+                                        mirror.tryEmitComplete();
+                                    }
                                 }
                             },
                             err -> {

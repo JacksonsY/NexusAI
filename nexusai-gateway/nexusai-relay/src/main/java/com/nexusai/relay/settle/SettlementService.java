@@ -3,6 +3,7 @@ package com.nexusai.relay.settle;
 import com.nexusai.common.constant.GatewayConstants;
 import com.nexusai.billing.money.UsdAmount;
 import com.nexusai.billing.meter.UsageMeter;
+import com.nexusai.billing.quota.FreezeReconciler;
 import com.nexusai.billing.quota.QuotaLedger;
 import com.nexusai.limit.RateLimiterService;
 import com.nexusai.relay.RelayFormats;
@@ -49,6 +50,7 @@ public class SettlementService {
     private final RateLimiterService rateLimiter;
     private final UsageReporter reporter;
     private final SettlementOutboxService outboxService;
+    private final FreezeReconciler freezeReconciler;
 
     /** 结算口径（usage 兜底链终值 + micro-USD·doSettle 与 R2 响应头回吐共用同一纯函数）。 */
     public record Settlement(Usage effective, long usdMicro, String usageSource) {
@@ -79,7 +81,9 @@ public class SettlementService {
                 if (usage.isZero() && "image".equals(modality)) {
                     usageSource = "image-fallback";   // image：按 perImageFee/perRequestFee 计，token 0
                 } else if (usage.isZero()) {
-                    int estPrompt = ctx.getBody().length / 4;
+                    // 🔴 multipart（音频转写/图编）字节非 token 代理·与 QuotaGateFilter freeze 同源：不按字节估 prompt，
+                    // 否则 25MB 音频估成数百万 token → estimated 巨额超收、且远超已小额冻结 → 击穿项目池为负。
+                    int estPrompt = isMultipart(ctx.getContentType()) ? 0 : ctx.getBody().length / 4;
                     if (ctx.isStreamAborted()) {
                         // 流被客户端取消/中途断：用户未收到完整输出 → 不按上界估补全，仅计 prompt
                         effective = new Usage(estPrompt, 0, estPrompt, 0);
@@ -110,6 +114,11 @@ public class SettlementService {
         return new Settlement(effective, actualUsdAmount, usageSource);
     }
 
+    /** 是否 multipart/form-data（音频/文件上传·二进制 body·不按字节估 token·与 QuotaGateFilter 同口径）。 */
+    private static boolean isMultipart(String contentType) {
+        return contentType != null && contentType.toLowerCase().contains("multipart/form-data");
+    }
+
     private void doSettle(RelayContext ctx, Usage usage) {
         // 单次门闩：retry/异常/重复信号下 doSettle 只执行一次
         if (!ctx.tryStartSettle()) {
@@ -123,7 +132,11 @@ public class SettlementService {
         int totalTokens = effective.promptTokens() + effective.completionTokens();
         long refund = ctx.getFrozenUsdAmount() - actualUsdAmount;   // >0 退 / <0 补
         // 🔴 M1 资金安全：settle 必须在有界重试/补偿内——boundedElastic 抛异常/Redis 抖动绝不能让 freeze 永久滞留
-        settleWithRetry(ctx, refund);
+        boolean settled = settleWithRetry(ctx, refund);
+        if (settled && ctx.getToken() != null) {
+            // 正常结算完成 → 注销冻结登记（不再需崩溃对账）；结算失败时保留登记·由 outbox + FreezeReconciler 兜底
+            freezeReconciler.clear(ctx.getRequestId(), ctx.getToken().getId(), ctx.getFrozenUsdAmount());
+        }
         // 🔴 M2/M8 防污染：TPM 限流窗口只累加「真实解析」的 token；estimated/image-fallback/
         // client-abort/failed/settle-error 的假 token 绝不计入限流窗口
         if ("parsed".equals(usageSource) && totalTokens > 0) {
@@ -219,6 +232,8 @@ public class SettlementService {
                 // 幂等退款（与 doSettle/outbox 共用 "settle:"+requestId）：单发退款若 ACK 丢失被 outbox 重放也不双退。
                 quotaLedger.settleOnce(ctx.getToken(), ctx.getFrozenUsdAmount(),
                         settleDedupId(ctx), INLINE_SETTLE_DEDUP_TTL_SECONDS);
+                // 全额退成功 → 注销冻结登记（不再需崩溃对账）
+                freezeReconciler.clear(ctx.getRequestId(), ctx.getToken().getId(), ctx.getFrozenUsdAmount());
             }
         } catch (Exception e) {
             log.error("失败退款异常 requestId={}", ctx.getRequestId(), e);

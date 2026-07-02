@@ -1,3 +1,8 @@
+-- #####################################################################
+-- ⚠️  警告：演示数据含公开明文演示 Key（sk-demo-*），禁止在生产库执行！  ⚠️
+-- 本文件仅供本地开发 / 联调灌库使用；其中演示 Key 明文已随仓库公开，
+-- 任何生产环境 / 公网可达数据库执行本脚本都将造成密钥泄露与越权风险。
+-- #####################################################################
 -- =====================================================================
 -- nexusai 演示数据（合并版·一站式灌库）
 -- 第零部分 基座：渠道 / 密钥 / 模型目录 / 路由（INSERT IGNORE·不覆盖现有真实配置·供 fresh DB 自洽）
@@ -310,17 +315,16 @@ SELECT l.request_id,
   l.create_dt
 FROM nai_request_log l WHERE l.request_id LIKE 'req-demo-m%';
 
--- 用量事件 outbox（每条成功请求一条·cost_basis≈上游成本·与 cost_usd 差为毛利·delivered 少量积压演示）
+-- 用量事件 outbox（每条成功请求一条·cost_basis≈上游成本·与 cost_usd 差为毛利）
 DELETE FROM nai_usage_log WHERE request_id LIKE 'req-demo-%';
 INSERT INTO nai_usage_log
   (id, request_id, project_code, workspace_id, channel_id, key_id, model,
    prompt_tokens, completion_tokens, cache_tokens, cache_creation_tokens, total_tokens,
-   cost_basis, cost_usd, status, delivered, create_dt, update_dt)
+   cost_basis, cost_usd, status, create_dt, update_dt)
 SELECT 972000000000000000 + (l.id - 970000000000000000),
    l.request_id, l.project_code, l.workspace_id, l.channel_id, l.key_id, l.model,
    l.prompt_tokens, l.completion_tokens, l.cache_tokens, l.cache_creation_tokens, l.total_tokens,
    ROUND(l.cost_usd * 0.7, 8), l.cost_usd, 1,
-   CASE WHEN MOD(l.id, 30) = 0 THEN 0 ELSE 1 END,
    l.create_dt, l.create_dt
 FROM nai_request_log l WHERE l.request_id LIKE 'req-demo-t%' AND l.status = 1;
 

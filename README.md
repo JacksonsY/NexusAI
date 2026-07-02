@@ -35,7 +35,7 @@
 
 | 能力 | 说明 |
 |------|------|
-| 🔌 **多协议互转** | OpenAI 兼容入口 + Anthropic(`/v1/messages`) / Gemini 原生信封；Canonical 中枢做 OpenAI ↔ Anthropic ↔ Gemini 互转（文本 / 工具调用 / 多模态 / reasoning）|
+| 🔌 **多协议互转** | OpenAI 兼容入口 + Anthropic(`/v1/messages`) / Gemini 原生信封；Canonical 中枢做 OpenAI ↔ Anthropic ↔ Gemini 互转（文本 / 工具调用 / 多模态 / reasoning）；上游 Provider 覆盖 OpenAI / Anthropic / Gemini / Bedrock(SigV4) / Vertex(SA) |
 | 💸 **强闸门计费** | 三级额度（项目池 → 工作区钱包 → Key 子限额），请求前 Redis 原子 `freeze` 预扣、流末按真实 usage 多退少补，`freeze ≥ settle` 不变量；结构化 USD 价（input / output / cached / per-image / per-request）|
 | 🧭 **两级路由 + Key 池** | 第一级按能力 `priority` 分组 → 加权随机选渠道；第二级**渠道内 Key 池**四层选号（一致性哈希锚定 / 会话粘性 / 多因子打分 TopK / ZSET+Lua 并发槽）|
 | 🩺 **健康与熔断** | 渠道级 + Key 级双层熔断状态机（指数退避半开惰性复活）、429 自适应 RPM 学习、跨实例熔断态下沉 Redis + 即时广播 |
@@ -135,10 +135,10 @@ mysql -h127.0.0.1 -uroot -p nexusai < script/sql/nexusai-demo.sql
 mvn clean package
 java -jar nexusai-server-starter/target/nexusai-server-starter.jar
 
-# 5. 验证
+# 5. 验证（演示 Key 仅供本地联调，勿入生产）
 curl --noproxy '*' http://127.0.0.1:8600/actuator/health        # {"status":"UP"}
 curl --noproxy '*' -X POST http://127.0.0.1:8600/v1/chat/completions \
-  -H 'Authorization: Bearer sk-demo-ruoyi-001' -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-demo-biz-001' -H 'Content-Type: application/json' \
   -d '{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}'
 ```
 
@@ -163,7 +163,7 @@ curl --noproxy '*' -X POST http://127.0.0.1:8600/v1/chat/completions \
 
 NexusAI 是独立服务，外部业务系统作为**控制面客户端**接入（两种方式择一或并用）：
 
-- **控制面 HTTP API**：调 `POST /admin/keys`（密钥同步）、`/admin/quota-operations`（额度充退）、`/admin/channels`、`/admin/models` … 头部 `NexusAI-Admin-Token`
+- **控制面 HTTP API**：调 `POST /admin/keys`（密钥同步）、`/admin/quota/op`（额度充退）、`/admin/channels`、`/admin/models` … 头部 `NexusAI-Admin-Token`
 - **SDK**：依赖 `nexusai-client-starter`，注入 `NexusAiAdminClient` 调用
 
 用量由网关经 **Redis Stream** 主动回传业务侧入账。身份真理源在业务侧、网关只持投影；独立运营时网关自管。
@@ -174,7 +174,7 @@ NexusAI 是独立服务，外部业务系统作为**控制面客户端**接入�
 
 | 文件 | 用途 |
 |------|------|
-| `script/sql/nexusai.sql` | MySQL 表结构（23 张 `nai_` 表 · 可重入 `CREATE IF NOT EXISTS`）|
+| `script/sql/nexusai.sql` | MySQL 表结构（24 张 `nai_` 表 · 可重入 `CREATE IF NOT EXISTS`）|
 | `script/sql/nexusai-demo.sql` | 演示数据（渠道 / 模型目录 / 项目 / 500+ 请求日志 + 正文 / 运维数据 · 幂等可重复灌）|
 | `script/sql/postgres/nexusai_pg.sql` | PostgreSQL 表结构 |
 

@@ -238,7 +238,10 @@ public final class UsageExtractor {
             return Usage.ZERO;
         }
         int prompt = meta.path("promptTokenCount").asInt(0);
-        int completion = meta.path("candidatesTokenCount").asInt(0);
+        // 🔴 Gemini 2.5 系思维链 token 单列 thoughtsTokenCount（不含在 candidatesTokenCount 内），
+        // Google 按输出价计费——必须并入 completion，否则 thinking 模型输出对客户零计费（资损）。
+        int thoughts = meta.path("thoughtsTokenCount").asInt(0);
+        int completion = meta.path("candidatesTokenCount").asInt(0) + thoughts;
         int total = meta.path("totalTokenCount").asInt(prompt + completion);
         int cached = meta.path("cachedContentTokenCount").asInt(0);
         return new Usage(prompt, completion, total, cached);

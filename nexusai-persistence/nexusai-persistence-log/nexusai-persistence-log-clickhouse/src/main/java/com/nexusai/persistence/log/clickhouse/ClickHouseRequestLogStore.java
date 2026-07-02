@@ -61,11 +61,53 @@ public class ClickHouseRequestLogStore implements RequestLogStore {
 
     @Override
     public void save(RequestLogRecord r) {
+        mapper.insert(toPo(r));
+    }
+
+    @Override
+    public void saveBatch(List<RequestLogRecord> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<NaiRequestLog> pos = new ArrayList<>(records.size());
+        for (RequestLogRecord r : records) {
+            pos.add(toPo(r));
+        }
+        // 单条多值 INSERT = 单个 part：规避 ClickHouse 逐行 insert 触发的 part 爆炸（TOO_MANY_PARTS）
+        mapper.insertBatch(pos);
+    }
+
+    /**
+     * 领域模型 → CH 行：copy（排除 id/streamMode/createDt）+ stream_mode 0/1 + create_dt 兜底
+     * + 非 Nullable 的 String/LowCardinality 列（DDL DEFAULT ''）null→''。
+     * <p>多值批插按固定列全量写入、不走 {@code mapper.insert} 的 null 省略，若给这些非空列传 NULL 会被拒绝；
+     * save/saveBatch 共用本方法保证两路一致（单条 insert 写空串与 DEFAULT '' 等价·无副作用）。
+     */
+    private static NaiRequestLog toPo(RequestLogRecord r) {
         NaiRequestLog po = new NaiRequestLog();
         BeanUtils.copyProperties(r, po, "id", "streamMode", "createDt");
         po.setStreamMode(Boolean.TRUE.equals(r.getStreamMode()) ? 1 : 0);
         po.setCreateDt(r.getCreateDt() != null ? r.getCreateDt() : LocalDateTime.now());
-        mapper.insert(po);
+        po.setRequestId(nb(po.getRequestId()));
+        po.setTraceId(nb(po.getTraceId()));
+        po.setProjectCode(nb(po.getProjectCode()));
+        po.setModel(nb(po.getModel()));
+        po.setTargetModel(nb(po.getTargetModel()));
+        po.setModality(nb(po.getModality()));
+        po.setApiFormat(nb(po.getApiFormat()));
+        po.setEndpointApiFormat(nb(po.getEndpointApiFormat()));
+        po.setErrorCode(nb(po.getErrorCode()));
+        po.setUsageSource(nb(po.getUsageSource()));
+        po.setClientIp(nb(po.getClientIp()));
+        po.setUserAgent(nb(po.getUserAgent()));
+        po.setClientFamily(nb(po.getClientFamily()));
+        po.setPromptHash(nb(po.getPromptHash()));
+        return po;
+    }
+
+    /** null→空串（CH 非 Nullable String/LowCardinality 列须非 null 值）。 */
+    private static String nb(String s) {
+        return s == null ? "" : s;
     }
 
     @Override

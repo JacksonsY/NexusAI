@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import com.nexusai.billing.crypto.CredentialCipher;
 import com.nexusai.billing.quota.QuotaLedger;
 
 import java.math.BigDecimal;
@@ -45,6 +46,7 @@ public class KeySyncController {
     private final ApplicationEventPublisher eventPublisher;
     private final RedissonClient redisson;
     private final QuotaLedger quotaLedger;
+    private final CredentialCipher cipher;
 
     /** 本节点清缓存（进程内事件）+ 跨实例广播（RTopic·评审 H9：吊销即时清各节点·不靠 60s TTL）。 */
     private void broadcastTokenChanged(Long tokenId) {
@@ -56,6 +58,23 @@ public class KeySyncController {
     /** 委托作用域收口（单项目 M2M / 多项目运维 / 不限·见 {@link CallerScope}）。 */
     private static void assertProjectScope(ServerWebExchange exchange, String targetProjectCode) {
         CallerScope.assertProjectScope(exchange, targetProjectCode);
+    }
+
+    /**
+     * BYOK 上游凭证入库前置（与渠道凭证同范式·经共享 {@link CredentialCipher} AES-256-GCM 版本化加密）：
+     * 已是合法密文（{@code keyId:} 前缀·{@code decrypt} 可解）→ 直存；明文 → {@code encrypt} 加密后落库；空 → null。
+     * 目标：{@code nai_token.byok_credential} 永不存明文（业务面若误传明文亦兜底加密）。
+     */
+    private String normalizeByokCredential(String byokCredential) {
+        if (byokCredential == null || byokCredential.isBlank()) {
+            return null;
+        }
+        try {
+            cipher.decrypt(byokCredential);   // 合法密文（keyId 前缀可解）→ 原样直存
+            return byokCredential;
+        } catch (RuntimeException e) {
+            return cipher.encrypt(byokCredential);   // 明文 → 加密落库（未配 crypto.keys 则 encrypt 抛错·拒绝明文落库）
+        }
     }
 
     @PutMapping
@@ -84,7 +103,7 @@ public class KeySyncController {
             token.setQuotaUsd(dto.quotaUsd());   // 项目制：仅 Key 子限额 USD（NULL/≤0=不设）
             token.setRpmLimit(dto.rpmLimit());
             token.setTpmLimit(dto.tpmLimit());
-            token.setByokCredential(dto.byokCredential());
+            token.setByokCredential(normalizeByokCredential(dto.byokCredential()));   // 明文永不落库·加密后存
             token.setExpiredTime(dto.expiredTime());
             token.setStatus(dto.status() == null ? 1 : dto.status());
             if (isNew) {

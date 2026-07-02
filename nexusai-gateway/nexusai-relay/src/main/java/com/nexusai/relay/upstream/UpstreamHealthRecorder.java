@@ -54,6 +54,12 @@ public class UpstreamHealthRecorder {
         channelHealth.recordTransientError(r.channel().getId());
     }
 
+    /**
+     * Retry-After 冷却上限（5 分钟）：上游一个异常头（如 {@code Retry-After: 86400} 或未来日期）不应把
+     * Key/渠道全集群封禁一天——单响应头不得拥有全集群长时拒付能力。超限一律钳到此上限。
+     */
+    private static final long MAX_RETRY_AFTER_MS = 5 * 60_000L;
+
     private static Long parseRetryAfterMs(ClientResponse cr) {
         try {
             String ra = cr.headers().header("Retry-After").stream().findFirst().orElse(null);
@@ -63,12 +69,12 @@ public class UpstreamHealthRecorder {
             ra = ra.trim();
             // 形式一：delta-seconds（纯数字·最常见）
             if (!ra.isEmpty() && ra.chars().allMatch(Character::isDigit)) {
-                return Long.parseLong(ra) * 1000L;
+                return Math.min(Long.parseLong(ra) * 1000L, MAX_RETRY_AFTER_MS);
             }
             // 形式二：HTTP-date（RFC 1123·如 "Wed, 21 Oct 2025 07:28:00 GMT"）→ 距现在毫秒（下限 0·过去时刻即可立刻重试）
             long deltaMs = Duration.between(ZonedDateTime.now(),
                     ZonedDateTime.parse(ra, DateTimeFormatter.RFC_1123_DATE_TIME)).toMillis();
-            return Math.max(deltaMs, 0L);
+            return Math.min(Math.max(deltaMs, 0L), MAX_RETRY_AFTER_MS);
         } catch (Exception e) {
             return null;
         }

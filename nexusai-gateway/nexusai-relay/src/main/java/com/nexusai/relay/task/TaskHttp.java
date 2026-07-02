@@ -2,7 +2,12 @@ package com.nexusai.relay.task;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nexusai.common.constant.GatewayConstants;
+import com.nexusai.common.exception.GatewayErrorCode;
+import com.nexusai.common.exception.GatewayException;
+import com.nexusai.common.util.ClientIp;
 import com.nexusai.common.util.JsonUtils;
+import org.springframework.core.io.buffer.DataBufferLimitException;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -18,6 +23,9 @@ import java.util.List;
  */
 public final class TaskHttp {
 
+    /** 请求体聚合硬上限（64MB·与 {@code RelayOrchestrator} 同口径）：防未鉴权大体打爆堆内存（DoS）。 */
+    private static final int MAX_BODY_BYTES = 64 * 1024 * 1024;
+
     private TaskHttp() {
     }
 
@@ -26,16 +34,25 @@ public final class TaskHttp {
         return exchange.getRequest().getHeaders().getFirst(GatewayConstants.AUTH_HEADER);
     }
 
-    /** 响应式收全请求体为字符串（空体回 {}）。 */
+    /** 解析真实客户端 IP（经 {@link ClientIp}·仅信任可信代理 XFF·与 relay 主链 gate 同口径·防伪造绕过 IP 白名单）。 */
+    public static String clientIp(ServerWebExchange exchange) {
+        String xff = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+        var addr = exchange.getRequest().getRemoteAddress();
+        String remote = addr == null || addr.getAddress() == null ? "" : addr.getAddress().getHostAddress();
+        return ClientIp.resolve(remote, xff);
+    }
+
+    /** 响应式收全请求体为字符串（带上限·空体回 {}·超限 413）。 */
     public static Mono<String> body(ServerWebExchange exchange) {
-        return exchange.getRequest().getBody()
+        return DataBufferUtils.join(exchange.getRequest().getBody(), MAX_BODY_BYTES)
+                .onErrorMap(DataBufferLimitException.class,
+                        e -> GatewayException.of(GatewayErrorCode.PAYLOAD_TOO_LARGE, "请求体超过上限 " + MAX_BODY_BYTES + " 字节"))
                 .map(buf -> {
                     byte[] bytes = new byte[buf.readableByteCount()];
                     buf.read(bytes);
+                    DataBufferUtils.release(buf);   // 显式释放聚合 buffer（原 collectList 路径未释放·潜在泄漏）
                     return new String(bytes, StandardCharsets.UTF_8);
                 })
-                .collectList()
-                .map(parts -> String.join("", parts))
                 .defaultIfEmpty("{}");
     }
 

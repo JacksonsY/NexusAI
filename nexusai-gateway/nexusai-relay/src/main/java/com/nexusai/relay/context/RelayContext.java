@@ -26,6 +26,8 @@ public class RelayContext {
     private UsdRate usdRate;
 
     private String requestId;
+    /** 全链路 trace_id（TraceIdWebFilter 生成·gate 从 TRACE_ATTR 取入·随请求日志落库·供控制台按 traceId 串查） */
+    private String traceId;
     private String path;
     private String clientIp;
     /** 客户端 User-Agent（gate 采集·UA→client_family 推导 + 请求日志） */

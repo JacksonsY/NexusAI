@@ -24,6 +24,7 @@ import com.nexusai.router.affinity.StickyAffinity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,12 @@ public class RelayOrchestrator {
 
     private static final byte[] EMPTY = new byte[0];
     private static final int MAX_ATTEMPTS = 3;
+    /**
+     * 🔴 请求体聚合硬上限（64MB）：{@code DataBufferUtils.join} 无参重载会无上限把整个 body 收进内存，
+     * 且聚合发生在鉴权之前——未授权客户端灌大体即可打爆堆（DoS）。此上限须覆盖最大合法 multipart（音频/图编），
+     * 超限即 413。注意 {@code spring.codec.max-in-memory-size} 只约束 codec 反序列化，对裸 body join 无效。
+     */
+    private static final int MAX_BODY_BYTES = 64 * 1024 * 1024;
     /** 故障转移重试退避基数（ms·按 attempt 线性·封顶 {@link #RETRY_BACKOFF_MAX_MS}·非阻塞 delaySubscription·降瞬时风暴；仅上游错误/透传异常路径用） */
     private static final long RETRY_BACKOFF_MS = 50L;
     /** 故障转移重试退避封顶（ms·线性退避不超过此值）。 */
@@ -112,7 +119,9 @@ public class RelayOrchestrator {
 
     public Mono<Void> relay(ServerWebExchange webExchange, String path) {
         ServerHttpResponse response = webExchange.getResponse();
-        return DataBufferUtils.join(webExchange.getRequest().getBody())
+        return DataBufferUtils.join(webExchange.getRequest().getBody(), MAX_BODY_BYTES)
+                .onErrorMap(DataBufferLimitException.class,
+                        e -> GatewayException.of(GatewayErrorCode.PAYLOAD_TOO_LARGE, "请求体超过上限 " + MAX_BODY_BYTES + " 字节"))
                 .map(RelayOrchestrator::toBytes)
                 .defaultIfEmpty(EMPTY)
                 .flatMap(raw -> Mono.fromCallable(() -> gate(webExchange, path, raw))
@@ -150,6 +159,8 @@ public class RelayOrchestrator {
     private RelayContext gate(ServerWebExchange exchange, String path, byte[] raw) {
         RelayContext ctx = new RelayContext();
         ctx.setRequestId(UUID.randomUUID().toString());
+        // trace_id：TraceIdWebFilter 已生成并放入 TRACE_ATTR，此处取入 ctx → 随请求日志落库（否则 nai_request_log.trace_id 恒 null·控制台 traceId 排障失效）
+        ctx.setTraceId((String) exchange.getAttributes().get(GatewayConstants.TRACE_ATTR));
         ctx.setStartNanos(System.nanoTime());
         ctx.setPath(path);
         ctx.setClientIp(clientIp(exchange));

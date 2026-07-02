@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.nexusai.common.util.ClientIp;
+import com.nexusai.control.api.security.TokenHash;
 import com.nexusai.control.domain.governance.audit.vo.AuditLogPageVo;
 import com.nexusai.persistence.mapper.NaiAuditLogMapper;
 import com.nexusai.persistence.mapper.NaiProjectMapper;
@@ -40,7 +41,7 @@ public class AuditLogService {
     private final NaiProjectMapper projectMapper;
 
     /**
-     * 项目令牌 → projectCode 快照（写操作低频·5s 全量缓存足够）。
+     * 项目令牌 hash → projectCode 快照（写操作低频·5s 全量缓存足够）。key 为 {@code nai_project.token}（已是 sha256·非明文）。
      * 🔴 用 refreshAfterWrite：{@link #resolveActor} 由 {@link com.nexusai.control.domain.governance.audit.filter.AdminAuditWebFilter}
      * 的 doFinally 在终态信号线程（常为 Netty 事件循环）调用，过期后异步重载（Caffeine 执行器·非调用线程）+
      * {@link #warmTokenSnapshot()} 预热，避免在事件循环上跑阻塞 JDBC selectList。
@@ -72,10 +73,10 @@ public class AuditLogService {
         }
     }
 
-    /** 由请求头令牌解析操作者标识。 */
+    /** 由请求头令牌（<b>明文</b>）解析操作者标识：sha256 后查项目令牌快照（DB 仅存 hash），命中 → {@code project:{code}}，否则 admin。 */
     public String resolveActor(String adminToken) {
         if (adminToken != null && !adminToken.isBlank()) {
-            String code = tokenSnapshot.get("all").get(adminToken);
+            String code = tokenSnapshot.get("all").get(TokenHash.sha256(adminToken));
             if (code != null) {
                 return "project:" + code;
             }

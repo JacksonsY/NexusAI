@@ -42,6 +42,6 @@ public class NaiRoutingGroup extends BasePO {
     /** 策略配置 JSON（defaultPolicy + modelPolicies） */
     private String configJson;
 
-    /** 乐观锁版本（每次保存 +1·展示用） */
+    /** 修订号（每次保存 +1·展示用·非乐观锁：无 @Version，拦截器亦未装乐观锁插件） */
     private Integer version;
 }

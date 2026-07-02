@@ -36,10 +36,17 @@ public class ModelAliasFilter implements RelayFilter {
             return;
         }
         ctx.setPeek(new ChatRequestPeek(normalized, peek.stream(), peek.includeUsage(), peek.maxTokens()));
-        ObjectNode root = (ObjectNode) JsonUtils.readTree(ctx.getBody());
-        if (root != null) {
+        // 🔴 multipart（音频/图编）体是二进制 multipart·非 JSON：跳过体改写（JsonUtils.readTree 对非 JSON 抛异常 → 500·
+        // 原 `root != null` 判空是死代码）。出站 multipart 走原体透传·模型经 peek 归一供权限/计费/路由即可。
+        if (ctx.isMultipart()) {
+            return;
+        }
+        try {
+            ObjectNode root = (ObjectNode) JsonUtils.readTree(ctx.getBody());
             root.put("model", normalized);
             ctx.setBody(JsonUtils.toJson(root).getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignore) {
+            // 体非 JSON（非预期·如 Gemini 原生体模型在 URL）：保持原体·不因别名改写中断主链
         }
     }
 

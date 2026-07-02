@@ -7,8 +7,6 @@
 --   CREATE DATABASE nexusai WITH ENCODING 'UTF8';
 --   \c nexusai
 
-COMMENT ON TABLE nai_workspace IS '项目内工作区(B2C终端工作区钱包·按工作区隔离)';
-
 -- API Key 鉴权 + USD 额度运行时真理源
 CREATE TABLE IF NOT EXISTS nai_token (
   id                  BIGINT        NOT NULL,
@@ -63,6 +61,7 @@ CREATE TABLE IF NOT EXISTS nai_project (
   UNIQUE (project_code),
   UNIQUE (token)
 );
+COMMENT ON TABLE nai_project IS '项目(工作区+控制面集成边界)';
 
 -- 控制台运维账号（人类登录主体·账密真理源·借鉴 snail-ai sai_user / snail-job sj_system_user）
 CREATE TABLE IF NOT EXISTS nai_admin_user (
@@ -103,9 +102,8 @@ CREATE TABLE IF NOT EXISTS nai_workspace (
   update_dt     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (project_code, external_id)
 );
-COMMENT ON TABLE nai_project IS '项目(工作区+控制面集成边界)';
+COMMENT ON TABLE nai_workspace IS '项目内工作区(B2C终端工作区钱包·按工作区隔离)';
 
--- 网关实例节点（多实例集群视图·守护线程心跳 upsert·update_dt=末次心跳）
 -- 调度策略分组
 CREATE TABLE IF NOT EXISTS nai_routing_group (
   id                BIGINT       NOT NULL,
@@ -121,15 +119,22 @@ CREATE TABLE IF NOT EXISTS nai_routing_group (
 );
 COMMENT ON TABLE nai_routing_group IS '调度策略分组';
 
+-- 网关实例节点（多实例集群视图·守护线程心跳 upsert·update_dt=末次心跳·运行时快照随心跳上报）
 CREATE TABLE IF NOT EXISTS nai_node (
-  id         BIGINT       NOT NULL,
-  node_id    VARCHAR(128) NOT NULL,
-  host       VARCHAR(64)  DEFAULT NULL,
-  port       INT          DEFAULT NULL,
-  version    VARCHAR(64)  DEFAULT NULL,
-  started_at BIGINT       DEFAULT NULL,
-  create_dt  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-  update_dt  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  id              BIGINT           NOT NULL,
+  node_id         VARCHAR(128)     NOT NULL,
+  host            VARCHAR(64)      DEFAULT NULL,
+  port            INT              DEFAULT NULL,
+  version         VARCHAR(64)      DEFAULT NULL,
+  started_at      BIGINT           DEFAULT NULL,
+  role            VARCHAR(16)      DEFAULT 'worker',
+  active_requests INT              DEFAULT 0,
+  cpu_percent     DOUBLE PRECISION DEFAULT NULL,
+  heap_used_mb    INT              DEFAULT NULL,
+  heap_max_mb     INT              DEFAULT NULL,
+  labels          VARCHAR(500)     DEFAULT NULL,
+  create_dt       TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+  update_dt       TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE (node_id)
 );
@@ -163,6 +168,7 @@ CREATE TABLE IF NOT EXISTS nai_channel (
   quota_expires_at         BIGINT        DEFAULT 0,
   first_byte_timeout       INT           DEFAULT 0,
   request_timeout          INT           DEFAULT 0,
+  -- 渠道级熔断/健康态：运行时真身在 router 内存·当前不落库（控制台创建/编辑写重置基线·保留列备将来 flusher 回刷）
   rate_limit_reset_at      BIGINT        DEFAULT 0,
   overload_until           BIGINT        DEFAULT 0,
   temp_unschedulable_until BIGINT        DEFAULT 0,
@@ -183,8 +189,10 @@ CREATE TABLE IF NOT EXISTS nai_channel_key (
   weight                   INT       DEFAULT 0,
   priority                 INT       DEFAULT 0,
   status                   SMALLINT  DEFAULT 1,
+  -- rpm_learned：自适应学习到的真实 RPM·运行时在 router 内存·当前不落库（保留列备将来 flusher）
   rpm_learned              INT       DEFAULT 0,
   max_concurrency          INT       DEFAULT 0,
+  -- Key 级熔断/健康态：运行时真身在 router 内存·当前不落库（控制台创建/编辑写重置基线·保留列备将来 flusher 回刷）
   rate_limit_reset_at      BIGINT    DEFAULT 0,
   overload_until           BIGINT    DEFAULT 0,
   temp_unschedulable_until BIGINT    DEFAULT 0,
@@ -258,14 +266,14 @@ CREATE TABLE IF NOT EXISTS nai_usage_log (
   cost_basis        DECIMAL(20,8) DEFAULT 0,
   cost_usd          DECIMAL(18,6) DEFAULT 0,
   status            SMALLINT      DEFAULT 1,
-  delivered         SMALLINT      DEFAULT 0,
   create_dt         TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
   update_dt         TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 );
 COMMENT ON TABLE nai_usage_log IS '用量事件outbox';
 CREATE INDEX IF NOT EXISTS idx_usage_request ON nai_usage_log (request_id);
-CREATE INDEX IF NOT EXISTS idx_usage_delivered ON nai_usage_log (delivered);
+CREATE INDEX IF NOT EXISTS idx_usage_create_dt ON nai_usage_log (create_dt);
+CREATE INDEX IF NOT EXISTS idx_usage_project_id ON nai_usage_log (project_code, id);
 
 -- 故障转移/重试事件审计（换渠道/换 Key 重试与重试耗尽逐条留痕）
 CREATE TABLE IF NOT EXISTS nai_failover_event (
@@ -437,15 +445,6 @@ CREATE TABLE IF NOT EXISTS nai_system_config (
   create_dt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_dt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- 集群节点注册表强化
-ALTER TABLE nai_node
-  ADD COLUMN IF NOT EXISTS role varchar(16) DEFAULT 'worker',
-  ADD COLUMN IF NOT EXISTS active_requests int DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS cpu_percent double precision,
-  ADD COLUMN IF NOT EXISTS heap_used_mb int,
-  ADD COLUMN IF NOT EXISTS heap_max_mb int,
-  ADD COLUMN IF NOT EXISTS labels varchar(500);
 
 -- 控制面审计日志（2026-06-11）
 CREATE TABLE IF NOT EXISTS nai_audit_log (

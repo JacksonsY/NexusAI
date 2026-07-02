@@ -1,10 +1,14 @@
 package com.nexusai.provider.bedrock;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexusai.common.enums.ApiFormat;
+import com.nexusai.common.util.JsonUtils;
 import com.nexusai.provider.spi.Provider;
 import com.nexusai.provider.spi.UpstreamContext;
 import com.nexusai.provider.spi.UpstreamRequest;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +28,9 @@ import java.util.Set;
 public class BedrockProvider implements Provider {
 
     private static final Set<String> KEYS = Set.of("bedrock", "aws-bedrock");
+
+    /** Bedrock 上 Claude 模型的 anthropic_version（InvokeModel 必填·缺失即 400）。 */
+    private static final String BEDROCK_ANTHROPIC_VERSION = "bedrock-2023-05-31";
 
     @Override
     public ApiFormat apiFormat() {
@@ -58,7 +65,7 @@ public class BedrockProvider implements Provider {
         String host = "bedrock-runtime." + region + ".amazonaws.com";
         String uri = "/model/" + ctx.getTargetModel() + "/" + op;
         String url = "https://" + host + uri;
-        byte[] body = ctx.getRawBody();
+        byte[] body = toBedrockBody(ctx.getRawBody());
 
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("Content-Type", "application/json");
@@ -72,5 +79,31 @@ public class BedrockProvider implements Provider {
             });
         }
         return new UpstreamRequest("POST", url, headers, body);
+    }
+
+    /**
+     * 出站体规整为 Bedrock InvokeModel 严格 schema：剥离 Canonical/Anthropic 转换器产出的顶层 {@code model}
+     * （Bedrock 由 URL path 定模型）与 {@code stream}（invoke 为非流式），并注入 Bedrock 上 Claude 必填的
+     * {@code anthropic_version}（缺失即 400·已显式声明则保留）。体非 JSON 对象（解析失败/非对象）则原样返回不改写。
+     */
+    private static byte[] toBedrockBody(byte[] rawBody) {
+        if (rawBody == null || rawBody.length == 0) {
+            return rawBody;
+        }
+        JsonNode root;
+        try {
+            root = JsonUtils.readTree(rawBody);
+        } catch (RuntimeException e) {
+            return rawBody;   // 非 JSON 体：原样透传，不改写
+        }
+        if (!(root instanceof ObjectNode obj)) {
+            return rawBody;
+        }
+        obj.remove("model");
+        obj.remove("stream");
+        if (!obj.has("anthropic_version")) {
+            obj.put("anthropic_version", BEDROCK_ANTHROPIC_VERSION);
+        }
+        return JsonUtils.toJson(obj).getBytes(StandardCharsets.UTF_8);
     }
 }

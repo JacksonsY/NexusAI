@@ -15,6 +15,8 @@ import com.nexusai.persistence.po.NaiAdminUser;
 import com.nexusai.persistence.po.NaiAdminUserProject;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +27,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -48,27 +51,47 @@ public class AdminAuthController {
 
     /** 标准代理转发头（解析真实客户端 IP 用）。 */
     private static final String FORWARDED_FOR_HEADER = "X-Forwarded-For";
+    /** 登录失败限流：Redis 计数键前缀。 */
+    private static final String LOGIN_FAIL_PREFIX = "nai:admin:login:fail:";
+    /** 触发锁定的失败次数（窗口内失败达此值即锁定后续尝试）。 */
+    private static final long MAX_LOGIN_FAILURES = 5;
+    /** 失败计数/锁定窗口（分钟·首次失败起算·成功清零）。 */
+    private static final long FAIL_WINDOW_MINUTES = 5;
 
     private final ApplicationEventPublisher eventPublisher;
     private final NaiAdminUserMapper adminUserMapper;
     private final NaiAdminUserProjectMapper adminUserProjectMapper;
+    private final RedissonClient redisson;
 
     @PostMapping("/login")
     public Mono<R<AdminLoginView>> login(@RequestBody LoginReq req, ServerWebExchange exchange) {
         String ip = clientIp(exchange);
+        String username = req == null || req.getUsername() == null ? "" : req.getUsername();
         return Mono.fromCallable(() -> {
-            NaiAdminUser user = req == null || req.getUsername() == null ? null
+            // 🔴 登录失败限流（防默认账号在线爆破）：按 用户名+IP 计数·窗口内失败达上限即锁定；成功清零。IP 已经 ClientIp 解析·不裸信 XFF。
+            RAtomicLong failCounter = redisson.getAtomicLong(LOGIN_FAIL_PREFIX + username + "|" + ip);
+            if (failCounter.get() >= MAX_LOGIN_FAILURES) {
+                eventPublisher.publishEvent(new AdminAuditEvent("admin_login_locked", username, "控制台登录锁定", ip,
+                        "失败次数过多（" + FAIL_WINDOW_MINUTES + " 分钟内 ≥ " + MAX_LOGIN_FAILURES + " 次）"));
+                return R.<AdminLoginView>fail("登录失败次数过多，请 " + FAIL_WINDOW_MINUTES + " 分钟后再试");
+            }
+            NaiAdminUser user = username.isBlank() ? null
                     : adminUserMapper.selectOne(new LambdaQueryWrapper<NaiAdminUser>()
-                            .eq(NaiAdminUser::getUsername, req.getUsername()));
+                            .eq(NaiAdminUser::getUsername, username));
             boolean ok = user != null
                     && user.getStatus() != null && user.getStatus() == 1
                     && PasswordHasher.matches(req.getPassword(), user.getPassword());
             if (!ok) {
+                long fails = failCounter.incrementAndGet();
+                if (fails == 1L) {
+                    failCounter.expire(Duration.ofMinutes(FAIL_WINDOW_MINUTES));   // 首次失败起算固定窗口
+                }
                 eventPublisher.publishEvent(new AdminAuditEvent("admin_login_failed",
-                        req == null ? "" : String.valueOf(req.getUsername()), "控制台登录失败", ip,
+                        username, "控制台登录失败", ip,
                         user != null && user.getStatus() != null && user.getStatus() != 1 ? "账号已停用" : "账号或密码错误"));
                 return R.<AdminLoginView>fail("账号或密码错误");
             }
+            failCounter.delete();   // 成功登录清零失败计数
             List<String> projects = NaiAdminUser.ROLE_USER == user.getRole() ? grantedProjects(user.getId()) : List.of();
             // @RequestBody 解码已切线程 → 手动绑定 exchange 上下文后再调 StpUtil（同步执行·结束清理）。
             SaReactorSyncHolder.setContext(exchange);

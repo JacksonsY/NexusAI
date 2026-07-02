@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 自适应 RPM 置信度门控 + 探测回升（#5）与远端熔断镜像（#1）单测。
+ * 自适应 RPM 置信度门控 + 探测回升（#5）、远端熔断镜像（#1）、半开单飞探测 + 按轮次退避（#3）单测。
  */
 class RoutingHealthStatTest {
 
@@ -59,5 +59,39 @@ class RoutingHealthStatTest {
         s.remoteBannedUntil(2_000);
         s.remoteBannedUntil(1_000);   // 更早的戳不得缩短封禁
         assertThat(s.blockedUntil()).isEqualTo(2_000);
+    }
+
+    @Test
+    void halfOpenReleasesSingleProbeThenBlocksUntilSuccess() {
+        RoutingHealthStat s = new RoutingHealthStat();
+        long now = 1_000_000L;
+        long until = s.applyTransientBackoff(now, 10_000L, 5);   // 首次失败 → 熔断 10s
+        assertThat(until).isEqualTo(now + 10_000L);
+        assertThat(s.tryAcquireForDispatch(now + 5_000L)).as("熔断窗口内数据面全拒").isFalse();
+
+        long probeAt = now + 10_000L;   // 熔断到期 → 半开
+        assertThat(s.tryAcquireForDispatch(probeAt)).as("半开首个请求放行探测").isTrue();
+        assertThat(s.tryAcquireForDispatch(probeAt)).as("其余并发仍视为不可调度·防探测风暴").isFalse();
+        assertThat(s.schedulable(probeAt)).as("schedulable 纯读不受单飞影响·控制面判活为 true").isTrue();
+
+        s.recordSuccess(10);   // 探测成功 → 熔断闭合
+        assertThat(s.tryAcquireForDispatch(probeAt)).as("闭合后并发全放行").isTrue();
+        assertThat(s.tryAcquireForDispatch(probeAt)).isTrue();
+    }
+
+    @Test
+    void transientBackoffAdvancesPerRoundNotPerConcurrentFailure() {
+        RoutingHealthStat s = new RoutingHealthStat();
+        long base = 10_000L;
+        long t0 = 1_000_000L;
+        assertThat(s.applyTransientBackoff(t0, base, 5)).as("轮1·exp0 → 10s").isEqualTo(t0 + base);
+        // 同故障窗口内 N 个并发在途失败：不推进指数，沿用当轮到期（退避语义为「连续轮次」而非「并发次数」）
+        assertThat(s.applyTransientBackoff(t0 + 1_000L, base, 5)).as("同轮散兵不推进").isEqualTo(t0 + base);
+        assertThat(s.applyTransientBackoff(t0 + 2_000L, base, 5)).as("同轮散兵不推进").isEqualTo(t0 + base);
+
+        long t1 = t0 + base;   // 轮1 到期后新一轮失败 → exp1 → 20s
+        assertThat(s.applyTransientBackoff(t1, base, 5)).as("新一轮才推进指数退避").isEqualTo(t1 + 2 * base);
+        long t2 = t1 + 2 * base;   // 轮3 → exp2 → 40s
+        assertThat(s.applyTransientBackoff(t2, base, 5)).isEqualTo(t2 + 4 * base);
     }
 }

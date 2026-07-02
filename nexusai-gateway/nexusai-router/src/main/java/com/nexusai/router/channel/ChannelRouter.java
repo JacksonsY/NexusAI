@@ -8,7 +8,7 @@ import com.nexusai.persistence.po.NaiChannel;
 import com.nexusai.router.cache.RouteCache;
 import com.nexusai.router.config.SchedulingSettings;
 import com.nexusai.router.health.ChannelHealthManager;
-import com.nexusai.router.algo.ConsistentHashRing;
+import com.nexusai.router.algo.ConsistentHashRingCache;
 import com.nexusai.router.algo.WeightedPicker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,6 +41,9 @@ public class ChannelRouter {
     private final RouteCache routeCache;
     private final ChannelHealthManager channelHealth;
     private final SchedulingSettings schedulingSettings;
+    /** cache_affinity 渠道环缓存：候选集稳定则复用同一环·免每请求重建（配置/健康变化经签名自然失效）。 */
+    private final ConsistentHashRingCache<NaiAbility> affinityRingCache =
+            new ConsistentHashRingCache<>(a -> String.valueOf(a.getChannelId()), AFFINITY_VNODES);
 
     public NaiChannel selectChannel(String group, String model, String affinity,
                                     Set<Long> excludeChannelIds) {
@@ -79,9 +82,8 @@ public class ChannelRouter {
         }
         if (SchedulingSettings.MODE_CACHE_AFFINITY.equals(mode) && affinity != null && !affinity.isBlank()) {
             // 🔴 一致性哈希环（同 Key 级①锚定口径）替代取模：渠道增删/熔断只重映射约 1/N，取模则几乎全洗牌
-            // → 缓存亲和大面积漂移、上游 prompt cache 全失效并踩踏单一存活渠道。
-            NaiAbility hit = new ConsistentHashRing<>(top, a -> String.valueOf(a.getChannelId()), AFFINITY_VNODES)
-                    .route(affinity);
+            // → 缓存亲和大面积漂移、上游 prompt cache 全失效并踩踏单一存活渠道。环按候选集签名缓存复用·免每请求重建。
+            NaiAbility hit = affinityRingCache.ring(top).route(affinity);
             return hit != null ? hit : top.get(0);
         }
         return WeightedPicker.pick(top, a -> a.getWeight() == null ? 0 : a.getWeight());

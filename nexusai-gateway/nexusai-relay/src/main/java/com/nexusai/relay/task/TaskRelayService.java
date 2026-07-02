@@ -1,11 +1,15 @@
 package com.nexusai.relay.task;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.nexusai.billing.config.ModelPriceService;
 import com.nexusai.billing.config.UsdRate;
 import com.nexusai.billing.meter.UsageMeter;
 import com.nexusai.billing.quota.QuotaLedger;
 import com.nexusai.common.exception.GatewayErrorCode;
 import com.nexusai.common.exception.GatewayException;
+import com.nexusai.common.util.IpMatcher;
+import com.nexusai.common.util.JsonUtils;
+import com.nexusai.limit.RateLimiterService;
 import com.nexusai.persistence.po.NaiTask;
 import com.nexusai.persistence.po.NaiToken;
 import com.nexusai.auth.ApiKeyAuthService;
@@ -15,6 +19,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 异步任务网关服务（OpenAI /v1/tasks·Midjourney /mj·Suno /suno 三入站共用）：鉴权 → pre-charge 冻结 → 持久化任务 → 查询。
@@ -37,6 +44,7 @@ public class TaskRelayService {
     private final UsageMeter usageMeter;
     private final ModelPriceService modelPriceService;
     private final TaskAdapterRegistry adapterRegistry;
+    private final RateLimiterService rateLimiter;
 
     /** 拒绝未建价模型（默认开·与 HTTP 强闸门 QuotaGateFilter 同口径）。 */
     @Value("${nexusai.billing.deny-unpriced-model:true}")
@@ -47,8 +55,26 @@ public class TaskRelayService {
         return authService.authenticate(authHeader);
     }
 
-    /** 提交异步任务：按模型估价 pre-charge 冻结 → 持久化 SUBMITTED 任务（上游提交/轮询由 TaskAdapter 接手）。 */
-    public NaiTask submit(NaiToken token, String modality, String action, String model, String body) {
+    /**
+     * 提交异步任务：入站准入（IP 白名单 / 模型权限 / Key RPM·与 RelayFilter 链同口径）→ 按模型估价 pre-charge 冻结
+     * → 持久化 SUBMITTED 任务（上游提交/轮询由 TaskAdapter 接手）。任务端点不经 RelayFilter 链，故此处显式补齐准入。
+     * 注：项目/工作区级 RPM+TPM 与入站并发槽尚未覆盖（需抽公共 admission guard 与 RelayFilter 共用）·属后续。
+     */
+    public NaiTask submit(NaiToken token, String modality, String action, String model, String body, String clientIp) {
+        // 🔴 IP 白名单（nai_token.allow_ips·与 TokenAccessFilter 同口径）：被限 IP 的 Key 不得走任务口绕过来源管控
+        if (!ipAllowed(token, clientIp)) {
+            throw GatewayException.of(GatewayErrorCode.IP_NOT_ALLOWED, "该 Key 不允许来源 IP: " + clientIp);
+        }
+        // 🔴 模型权限白名单（nai_token.model_limits·与 ModelPermissionFilter/realtime admit 同口径）：
+        // 否则被限模型的 Key 可走 /mj·/suno·/kling·/v1/tasks 直连昂贵模型（越权）。
+        if (!modelAllowed(token, model)) {
+            throw GatewayException.of(GatewayErrorCode.MODEL_NOT_PERMITTED, "该 Key 无权访问模型: " + model);
+        }
+        // 🔴 Key 级 RPM 硬闸门（nai_token.rpm_limit·与 RateLimitFilter 同口径·0=不限）：防被限速 Key 走任务口无限提交昂贵任务
+        int keyRpm = token.getRpmLimit() == null ? 0 : token.getRpmLimit();
+        if (!rateLimiter.tryAcquire("apikey", String.valueOf(token.getId()), keyRpm)) {
+            throw GatewayException.of(GatewayErrorCode.RATE_LIMITED, "Key RPM 超限");
+        }
         if (adapterRegistry.resolve(modality).isEmpty()) {
             throw GatewayException.of(GatewayErrorCode.NO_CHANNEL_AVAILABLE,
                     "异步任务上游适配器未配置: modality=" + modality);
@@ -78,6 +104,43 @@ public class TaskRelayService {
                 }
             }
             throw e;
+        }
+    }
+
+    /** 模型权限白名单校验（nai_token.model_limits·空=不限；与 ModelPermissionFilter 同口径）。 */
+    private static boolean modelAllowed(NaiToken token, String model) {
+        String json = token.getModelLimits();
+        if (json == null || json.isBlank()) {
+            return true;
+        }
+        try {
+            List<String> allowed = JsonUtils.parse(json, new TypeReference<List<String>>() { });
+            return allowed == null || allowed.isEmpty() || allowed.contains(model);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    /** 来源 IP 白名单校验（nai_token.allow_ips·空/未配=不限·解析失败 fail-open；与 TokenAccessFilter 同口径）。 */
+    private static boolean ipAllowed(NaiToken token, String ip) {
+        String raw = token.getAllowIps();
+        if (raw == null || raw.isBlank() || ip == null || ip.isBlank()) {
+            return true;
+        }
+        List<String> allowed = parseIps(raw);
+        return allowed == null || allowed.isEmpty() || IpMatcher.inWhitelist(ip, allowed);
+    }
+
+    /** allow_ips 兼容 JSON 数组与逗号分隔两种存法（与 TokenAccessFilter.parseIps 同口径·解析失败回 null=fail-open）。 */
+    private static List<String> parseIps(String raw) {
+        String trimmed = raw.trim();
+        try {
+            if (trimmed.startsWith("[")) {
+                return JsonUtils.parse(trimmed, new TypeReference<List<String>>() { });
+            }
+            return Arrays.stream(trimmed.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+        } catch (Exception e) {
+            return null;
         }
     }
 

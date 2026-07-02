@@ -213,7 +213,34 @@
             </plugins>
         </pluginManagement>
         <plugins>
-            <!-- ${revision} CI-friendly：构建期原生解析；install/deploy 时由 flatten 产出干净 pom（P 阶段再启用） -->
+            <!-- ${revision} CI-friendly：flatten 在 install/deploy 时把各模块 pom 的 ${revision} 解析为字面版本，
+                 产出干净可被外部仓库消费的 pom（否则 nexusai-client-starter 等交付物 parent 版本是字面 ${revision}·消费方解析失败）。
+                 resolveCiFriendliesOnly：仅解析 ${revision}/${sha1}/${changelist}，其余 pom 结构保持不变。 -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <updatePomFile>true</updatePomFile>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

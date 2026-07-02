@@ -6,6 +6,8 @@ dist/
 *.jar
 *.war
 !.mvn/wrapper/maven-wrapper.jar
+# flatten-maven-plugin 产物（install/deploy 时生成于各模块根·非源码）
+.flattened-pom.xml
 
 # ===== 依赖 =====
 node_modules/
@@ -32,9 +34,13 @@ logs/
 *.tmp
 .DS_Store
 
-# ===== 文档：仅保留根 README.md，其余 *.md（内部文档/规范/进度/审计）一律不提交 =====
+# ===== 运行期数据目录（本地生成·勿入库） =====
+data/
+
+# ===== 文档：仅保留根 README.md 与 docs/ 下正式文档，其余 *.md（内部规范/进度）不提交 =====
 *.md
 !/README.md
+!/docs/code-review-2026-07.md
 
 # ===== 内部协作 / 元数据 =====
 AGENTS.md

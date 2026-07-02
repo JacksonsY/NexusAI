@@ -1,6 +1,7 @@
 package com.nexusai.billing.quota;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nexusai.common.exception.GatewayErrorCode;
 import com.nexusai.common.exception.GatewayException;
 import com.nexusai.billing.money.UsdAmount;
@@ -75,10 +76,16 @@ public class QuotaLedger {
             + "if ARGV[3]=='1' then redis.call('decrby',KEYS[3],need) end; "
             + "return redis.call('decrby',KEYS[1],need);";
 
-    /** 三级多退少补：incrby 负数=补扣（key 不存在按 0 起建·与业务面改额竞态以 DB 基线收敛） */
+    /**
+     * 三级多退少补：incrby 负数=补扣。<b>仅对已存在的 key 生效（exists 守卫）</b>：
+     * 余额 key 部署在 noeviction Redis，唯一的缺失来源是管理端 invalidate（停用/删项目·工作区）显式删除。
+     * 若此时仍 incrby 会把已被刻意失效的 key 按 0 复活、绕过 seedProject 的 status 复查（复活停用主体 + 抹掉消耗）。
+     * 故 key 缺失即跳过该级结算（在途请求的尾结算随失效丢弃·反向同步已在删 key 前快照余额回 DB 基线）。
+     */
     private static final String SETTLE_LUA =
-            "if ARGV[2]=='1' then redis.call('incrby',KEYS[2],ARGV[1]) end; "
-            + "if ARGV[3]=='1' then redis.call('incrby',KEYS[3],ARGV[1]) end; "
+            "if ARGV[2]=='1' and redis.call('exists',KEYS[2])==1 then redis.call('incrby',KEYS[2],ARGV[1]) end; "
+            + "if ARGV[3]=='1' and redis.call('exists',KEYS[3])==1 then redis.call('incrby',KEYS[3],ARGV[1]) end; "
+            + "if redis.call('exists',KEYS[1])==0 then return 0 end; "
             + "return redis.call('incrby',KEYS[1],ARGV[1]);";
 
     /**
@@ -88,8 +95,9 @@ public class QuotaLedger {
     private static final String SETTLE_ONCE_LUA =
             "if redis.call('set',KEYS[4],'1','NX','EX',ARGV[4])==false then "
             + "return tonumber(redis.call('get',KEYS[1]) or '0') end; "
-            + "if ARGV[2]=='1' then redis.call('incrby',KEYS[2],ARGV[1]) end; "
-            + "if ARGV[3]=='1' then redis.call('incrby',KEYS[3],ARGV[1]) end; "
+            + "if ARGV[2]=='1' and redis.call('exists',KEYS[2])==1 then redis.call('incrby',KEYS[2],ARGV[1]) end; "
+            + "if ARGV[3]=='1' and redis.call('exists',KEYS[3])==1 then redis.call('incrby',KEYS[3],ARGV[1]) end; "
+            + "if redis.call('exists',KEYS[1])==0 then return 0 end; "
             + "return redis.call('incrby',KEYS[1],ARGV[1]);";
 
     /** 结算去重标记 TTL：覆盖 outbox 最长重试窗口（MAX_ATTEMPTS×退避），到期自动回收。 */
@@ -173,16 +181,6 @@ public class QuotaLedger {
             }
         }
         throw GatewayException.of(GatewayErrorCode.INTERNAL_ERROR, "USD 余额播种竞态超限: " + projectCode);
-    }
-
-    /** 按 tokenId 结算（异步任务等只持 tokenId 的场景·token 已被删则告警放弃——退款标的不存在）。 */
-    public void settleByTokenId(Long tokenId, long refund) {
-        NaiToken token = tokenMapper.selectById(tokenId);
-        if (token == null) {
-            log.warn("⚠️ settle 放弃：token 已不存在 tokenId={} refund={}", tokenId, refund);
-            return;
-        }
-        settle(token, refund);
     }
 
     /**
@@ -295,14 +293,43 @@ public class QuotaLedger {
         return balance >= UNLIMITED / 2;
     }
 
-    /** 失效项目池 Redis 余额（业务面改额/对账后调用，下次请求从 nai_project 重播种）。 */
+    /**
+     * 失效项目池 Redis 余额（停用/归档/改额后调用，下次请求从 nai_project 重播种）。
+     * <p>🔴 删 key 前<b>反向同步</b>：把当前运行时余额原子快照回 DB 基线（quota_usd），再删 key。
+     * 否则下次 seedProject 用<b>陈旧</b> DB 基线重播种（消耗只发生在 Redis、两次充退之间从不回写 DB）
+     * → 复活已花额度（停用再启用即白送整池余额）。unlimited 哨兵与不存在的 key 不回写。
+     * 项目<b>删除</b>场景 DB 行已不存在，此处 update 命中 0 行（无害空转）。
+     */
     public void invalidateProject(String projectCode) {
-        redisson.getBucket(projectKey(projectCode), StringCodec.INSTANCE).delete();
+        Object v = redisson.getBucket(projectKey(projectCode), StringCodec.INSTANCE).getAndDelete();
+        if (v == null) {
+            return;
+        }
+        long remaining = Long.parseLong((String) v);
+        if (unlimitedBalance(remaining)) {
+            return;
+        }
+        projectMapper.update(null, new LambdaUpdateWrapper<NaiProject>()
+                .eq(NaiProject::getProjectCode, projectCode)
+                .set(NaiProject::getQuotaUsd, UsdAmount.fromMicros(remaining)));
     }
 
-    /** 失效工作区钱包 Redis 余额（user 维度充退/管理端改额后调用）。 */
+    /**
+     * 失效工作区钱包 Redis 余额（停用/改 unlimited 后调用）。反向同步语义同 {@link #invalidateProject}：
+     * 删 key 前把运行时余额快照回 nai_workspace.quota_usd，避免重播种复活已花额度。
+     */
     public void invalidateWorkspace(String projectCode, Long workspaceId) {
-        redisson.getBucket(workspaceKey(projectCode, workspaceId), StringCodec.INSTANCE).delete();
+        Object v = redisson.getBucket(workspaceKey(projectCode, workspaceId), StringCodec.INSTANCE).getAndDelete();
+        if (v == null) {
+            return;
+        }
+        long remaining = Long.parseLong((String) v);
+        if (unlimitedBalance(remaining)) {
+            return;
+        }
+        workspaceMapper.update(null, new LambdaUpdateWrapper<NaiWorkspace>()
+                .eq(NaiWorkspace::getId, workspaceId)
+                .set(NaiWorkspace::getQuotaUsd, UsdAmount.fromMicros(remaining)));
     }
 
     /** 失效 Key 子限额 Redis 余额（Key 同步/管理端改子限额后调用）。 */

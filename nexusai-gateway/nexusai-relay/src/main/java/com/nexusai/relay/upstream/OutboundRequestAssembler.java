@@ -9,6 +9,7 @@ import com.nexusai.common.util.JsonUtils;
 import com.nexusai.runtime.ModuleToggles;
 import com.nexusai.runtime.RuntimeSettings;
 import com.nexusai.protocol.transform.CanonicalConverter;
+import com.nexusai.protocol.transform.GeminiChatTransformer;
 import com.nexusai.provider.spi.Provider;
 import com.nexusai.provider.spi.UpstreamContext;
 import com.nexusai.provider.spi.UpstreamRequest;
@@ -49,9 +50,15 @@ public class OutboundRequestAssembler {
         if (ctx.isMultipart()) {
             return assembleMultipart(ctx, route, provider);
         }
-        byte[] upstreamBody = rewriteModelIfNeeded(ctx.getBody(), ctx.getPeek().model(), route.targetModel());
+        ApiFormat inbound = RelayFormats.inboundFormat(ctx.getPath());
+        byte[] upstreamBody = rewriteModelIfNeeded(ctx.getBody(), ctx.getPeek().model(), route.targetModel(), inbound);
         // P4 Canonical：渠道 setting.canonical=true 且 入站格式≠上游格式 → 跨协议互转（非流式）
         upstreamBody = maybeConvertRequest(ctx, route, provider, upstreamBody);
+        // 🔴 Gemini 原生入站转他协议（canonical convert）：Gemini body 无 model → canonical.model 为占位哨兵
+        // （GeminiChatTransformer.MODEL_FROM_URL_PLACEHOLDER·模型真身在 URL），转换后用真实上游模型回填，否则上游收到哨兵串 400。
+        if (ctx.isCanonicalConvert() && inbound == ApiFormat.GEMINI) {
+            upstreamBody = backfillGeminiModelPlaceholder(upstreamBody, route.targetModel());
+        }
         // P13 敏感信息保护（chat_pii_redaction 模块·出站前正则脱敏·上游看不到原文）
         upstreamBody = piiRedactor.redact(upstreamBody);
         // P12 Anthropic prompt caching：发往 anthropic 协议渠道自动规划 cache_control 断点
@@ -122,13 +129,35 @@ public class OutboundRequestAssembler {
         return canonicalConverter.convertRequest(body, in, up);
     }
 
-    private static byte[] rewriteModelIfNeeded(byte[] body, String sourceModel, String targetModel) {
+    private static byte[] rewriteModelIfNeeded(byte[] body, String sourceModel, String targetModel, ApiFormat inbound) {
+        // 🔴 Gemini 原生入站：模型在 URL path（canonicalPath 已同步改写 path），body 无 model 字段——绝不注入 model，
+        // 否则上游报 Unknown name "model"（评审：体与 path 双写、体被污染）。model_mapping 对 Gemini 只改 path。
+        if (inbound == ApiFormat.GEMINI) {
+            return body;
+        }
         if (targetModel == null || targetModel.equals(sourceModel)) {
             return body;
         }
         ObjectNode root = (ObjectNode) JsonUtils.readTree(body);
         root.put("model", targetModel);
         return JsonUtils.toJson(root).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** Gemini 原生入站跨协议转换后：把出站体里的模型占位哨兵替换为真实上游模型（无哨兵则原样返回）。 */
+    private static byte[] backfillGeminiModelPlaceholder(byte[] body, String targetModel) {
+        if (targetModel == null) {
+            return body;
+        }
+        try {
+            if (JsonUtils.readTree(body) instanceof ObjectNode root
+                    && GeminiChatTransformer.MODEL_FROM_URL_PLACEHOLDER.equals(root.path("model").asText(null))) {
+                root.put("model", targetModel);
+                return JsonUtils.toJson(root).getBytes(StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignore) {
+            // 非 JSON / 无 model：原样返回
+        }
+        return body;
     }
 
     /**

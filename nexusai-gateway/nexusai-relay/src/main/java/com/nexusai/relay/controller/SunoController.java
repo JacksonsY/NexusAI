@@ -38,7 +38,7 @@ public class SunoController {
     public Mono<Map<String, Object>> submit(@PathVariable String action, ServerWebExchange exchange) {
         return TaskHttp.body(exchange).flatMap(b -> Mono.fromCallable(() -> {
             NaiToken token = taskRelay.authenticate(TaskHttp.authHeader(exchange));
-            NaiTask task = taskRelay.submit(token, MODALITY, action, MODALITY, b);
+            NaiTask task = taskRelay.submit(token, MODALITY, action, MODALITY, b, TaskHttp.clientIp(exchange));
             Map<String, Object> m = ok();
             m.put("data", task.getTaskId());
             return m;

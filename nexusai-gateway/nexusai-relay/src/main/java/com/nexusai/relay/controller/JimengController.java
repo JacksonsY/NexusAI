@@ -43,7 +43,7 @@ public class JimengController {
                 return envelope(taskRelay.query(token, taskId));
             }
             String model = firstNonBlank(reqField(b, "req_key"), "jimeng");
-            NaiTask task = taskRelay.submit(token, MODALITY, action == null ? "submit" : action, model, b);
+            NaiTask task = taskRelay.submit(token, MODALITY, action == null ? "submit" : action, model, b, TaskHttp.clientIp(exchange));
             return envelope(task);
         }).subscribeOn(Schedulers.boundedElastic()));
     }

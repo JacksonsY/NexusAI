@@ -66,6 +66,14 @@ public class KeyHealthManager {
         return stat(keyId).schedulable(now);   // 含远端熔断镜像（remoteBanUntil）·热路径不查 Redis
     }
 
+    /**
+     * 数据面选号闸（KeyPoolSelector 选号过滤用）：熔断中→false；半开态只放一个探测请求（CAS·防探测风暴），其余→false。
+     * 与 {@link #schedulable}（纯读·控制面判活用）分离——探测名额是副作用，只能由真正发起请求的选号消费。
+     */
+    public boolean tryAcquireForDispatch(Long keyId, long now) {
+        return stat(keyId).tryAcquireForDispatch(now);
+    }
+
     public void recordSuccess(Long keyId, long latencyMs) {
         stat(keyId).recordSuccess(latencyMs);
     }
@@ -95,12 +103,13 @@ public class KeyHealthManager {
     /** 超时/5xx：临时不可调度 + 扣健康分。<b>指数退避半开</b>：连续失败时退避翻倍，成功一次即复位。 */
     public void recordTransientError(Long keyId) {
         RoutingHealthStat s = stat(keyId);
-        long backoff = s.nextTransientBackoffMs(TEMP_BAN_MS, TRANSIENT_BACKOFF_CAP_EXP);
-        long until = System.currentTimeMillis() + backoff;
-        s.unschedulableUntil(until);
+        long now = System.currentTimeMillis();
+        // 按「轮次」退避 + 武装半开单飞：applyTransientBackoff 原子完成「判当前熔断窗口→决定是否推进指数→置临时熔断戳→武装探测」，
+        // 同一故障窗口的并发在途失败不再各自把退避顶到 cap（退避语义回归「连续轮次」）。
+        long until = s.applyTransientBackoff(now, TEMP_BAN_MS, TRANSIENT_BACKOFF_CAP_EXP);
         store.recordBan(NS, keyId, until);
         s.recordError(20);
-        log.debug("Key {} 临时熔断退避 {}ms（指数·半开）", keyId, backoff);
+        log.debug("Key {} 临时熔断至 {}（指数退避·按轮次·半开单飞）", keyId, until);
     }
 
     /**

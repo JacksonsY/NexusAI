@@ -125,7 +125,10 @@ public class CleanupJob {
         } while (n >= batch);
 
         LocalDateTime taskCutoff = now.minusDays(config.getInt("task_retention_days", 30));
-        int tasks = taskMapper.delete(new LambdaQueryWrapper<NaiTask>().lt(NaiTask::getCreateDt, taskCutoff));
+        // 仅清理终态任务（SUCCESS/FAILED）；非终态（SUBMITTED/IN_PROGRESS·含已冻结未结算）永不物理删除，避免额度永久滞留、对账凭据销毁
+        int tasks = taskMapper.delete(new LambdaQueryWrapper<NaiTask>()
+                .lt(NaiTask::getCreateDt, taskCutoff)
+                .in(NaiTask::getStatus, "SUCCESS", "FAILED"));
 
         LocalDateTime foCutoff = now.minusDays(config.getInt("failover_event_retention_days", 30));
         int failovers = failoverEventMapper.delete(

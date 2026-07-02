@@ -177,7 +177,7 @@ public class AnthropicChatTransformer implements ChatTransformer {
             }
         }
         String finish = resp.finishReason();
-        root.put("stop_reason", hasTools ? "tool_use" : ("stop".equals(finish) || finish == null ? "end_turn" : finish));
+        root.put("stop_reason", hasTools ? "tool_use" : stopReasonForAnthropic(finish));
         ObjectNode usage = root.putObject("usage");
         usage.put("input_tokens", resp.promptTokens());
         usage.put("output_tokens", resp.completionTokens());
@@ -414,6 +414,23 @@ public class AnthropicChatTransformer implements ChatTransformer {
             case "max_tokens" -> "length";
             case "tool_use" -> "tool_calls";
             default -> stop;
+        };
+    }
+
+    /**
+     * canonical finish_reason → Anthropic stop_reason（合法枚举）：length→max_tokens（不再原样透传 OpenAI 的 "length"）、
+     * tool_calls→tool_use、content_filter→refusal；stop/null 及未知值保守回退 end_turn（避免非法 stop_reason 破坏严格客户端）。
+     */
+    private static String stopReasonForAnthropic(String finish) {
+        if (finish == null) {
+            return "end_turn";
+        }
+        return switch (finish) {
+            case "length" -> "max_tokens";
+            case "tool_calls" -> "tool_use";
+            case "content_filter" -> "refusal";
+            case "stop", "end_turn", "stop_sequence" -> "end_turn";
+            default -> "end_turn";
         };
     }
 }

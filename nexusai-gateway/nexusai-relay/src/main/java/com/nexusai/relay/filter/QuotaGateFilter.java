@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nexusai.billing.config.ModelPriceService;
 import com.nexusai.billing.config.UsdRate;
 import com.nexusai.billing.meter.UsageMeter;
+import com.nexusai.billing.quota.FreezeReconciler;
 import com.nexusai.billing.quota.QuotaLedger;
 import com.nexusai.common.exception.GatewayErrorCode;
 import com.nexusai.common.exception.GatewayException;
@@ -36,6 +37,7 @@ public class QuotaGateFilter implements RelayFilter {
     private final ModelPriceService modelPriceService;
     private final UsageMeter usageMeter;
     private final QuotaLedger quotaLedger;
+    private final FreezeReconciler freezeReconciler;
 
     /** 拒绝未建价模型（默认开·防「可路由但 nai_model 无价格行」的模型 freeze≈0 白嫖；置 false 退回旧的按 0 放行行为）。 */
     @Value("${nexusai.billing.deny-unpriced-model:true}")
@@ -57,7 +59,11 @@ public class QuotaGateFilter implements RelayFilter {
         String modality = RelayFormats.modalityOf(ctx.getPath());
         boolean image = "image".equals(modality);
         boolean hasCompletion = "chat".equals(modality);
-        int estPrompt = ctx.getBody().length / 4;                 // 粗估输入 token
+        // 🔴 multipart（音频转写/图编）body 含二进制 payload，字节数不是 token 代理：bytes/4 会把 25MB 音频估成
+        // 数百万 token → 冻结数十美元，且转写响应常无 usage → settle 按 estimated=frozen 实扣（巨额超收·随文件线性放大）。
+        // 故 multipart 不按字节估 prompt（按 perRequest/perImage 计价）；settle 侧同源判定（见 SettlementService）。
+        boolean multipart = isMultipart(ctx.getContentType());
+        int estPrompt = multipart ? 0 : ctx.getBody().length / 4;    // 粗估输入 token（multipart 除外）
         int declaredMax = ctx.getPeek() == null ? 0 : ctx.getPeek().maxTokens();
         int estCompletion = hasCompletion ? (declaredMax > 0 ? declaredMax : DEFAULT_EST_COMPLETION) : 0;
         // 🔴 image 张数取请求 n（默认 1·封顶 MAX_IMAGE_COUNT）一次解析存 ctx·settle 同源复用：n>1 时 freeze/settle 均按张计，杜绝少计费
@@ -72,6 +78,14 @@ public class QuotaGateFilter implements RelayFilter {
         long est = Math.max(estAllInput, estAllCreation);
         quotaLedger.freeze(ctx.getToken(), est);
         ctx.setFrozenUsdAmount(est);
+        // 🔴 崩溃对账登记：进程若在此后、settle 之前崩溃（长流式窗口），冻结既无内联 settle 也无 outbox 行 →
+        // 由 FreezeReconciler 扫超阈值孤儿冻结全额退（dedup 与正常 settle 互斥·不双退）。est≤0 内部不登记。
+        freezeReconciler.record(ctx.getRequestId(), ctx.getToken().getId(), est, System.currentTimeMillis());
+    }
+
+    /** 是否 multipart/form-data（音频/文件上传·二进制 body·不按字节估 token）。 */
+    private static boolean isMultipart(String contentType) {
+        return contentType != null && contentType.toLowerCase().contains("multipart/form-data");
     }
 
     /** 解析图片生成请求体的 {@code n}（默认 1·夹在 [1, MAX_IMAGE_COUNT]）；体非法/缺失退 1。 */

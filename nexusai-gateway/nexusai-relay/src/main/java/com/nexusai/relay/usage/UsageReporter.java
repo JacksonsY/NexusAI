@@ -71,7 +71,6 @@ public class UsageReporter {
             // 此前从不赋值 → DB 默认 0 被误读为「100% 毛利」。显式 cost==sell 是诚实占位，杜绝该假象。
             logPo.setCostBasis(UsdAmount.fromMicros(usdMicro));
             logPo.setStatus(1);
-            logPo.setDelivered(Boolean.FALSE);
             usageLogMapper.insert(logPo);
         } catch (Exception e) {
             log.error("nai_usage_log 写入失败 requestId={}", ctx.getRequestId(), e);
@@ -104,6 +103,7 @@ public class UsageReporter {
             String modality = RelayFormats.modalityOf(ctx.getPath());
             Map<String, String> e = new HashMap<>();
             e.put("requestId", ctx.getRequestId());
+            e.put("traceId", nullSafe(ctx.getTraceId()));   // 全链路 trace_id → nai_request_log.trace_id（供控制台 traceId 串查）
             e.put("projectCode", nullSafe(ctx.getToken().getProjectCode()));
             e.put("workspaceId", ctx.getToken().getWorkspaceId() == null ? "" : String.valueOf(ctx.getToken().getWorkspaceId()));
             e.put("channelId", String.valueOf(ctx.getRoute().channel().getId()));

@@ -42,6 +42,22 @@ public interface RequestLogStore {
     void save(RequestLogRecord record);
 
     /**
+     * 批量写入请求日志（observe 消费者按 Redis Stream drain 的一批调用）。
+     * <p><b>原子契约</b>：实现须保证整批「全落地或全不落地」（单条多值 INSERT 或事务）。消费侧是 at-least-once
+     * 重投模型——批失败会回退逐条重放，若实现非原子地部分落地又整体报错，重放会产生重复行。
+     * <p>默认实现逐条 {@link #save}（<b>非原子</b>），仅为向后兼容占位：量产 driver 必须 override 为原子批插
+     * （ClickHouse 单 INSERT = 单 part 规避 TOO_MANY_PARTS；MySQL/PG 单往返多值 INSERT 提吞吐）。
+     */
+    default void saveBatch(List<RequestLogRecord> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        for (RequestLogRecord record : records) {
+            save(record);
+        }
+    }
+
+    /**
      * 删除 cutoff 之前的日志（清理策略/手动清空·分批）。
      *
      * @return 本批删除行数；driver 不支持精确计数（ClickHouse 异步 mutation）时返回 -1

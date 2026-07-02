@@ -29,6 +29,7 @@ public enum GatewayErrorCode {
 
     // 协议 / 参数
     BAD_REQUEST(400, "invalid_request_error", "请求参数错误"),
+    PAYLOAD_TOO_LARGE(413, "payload_too_large", "请求体超过大小上限"),
     MODEL_NOT_FOUND(404, "model_not_found", "模型不存在"),
     GENERATION_NOT_FOUND(404, "not_found", "请求记录不存在或尚未落库"),
     MODEL_DISABLED(403, "model_disabled", "模型已停用"),

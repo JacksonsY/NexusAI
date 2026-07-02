@@ -17,31 +17,28 @@ import java.util.Objects;
 public class ProviderFactory {
 
     private final List<Provider> providers;
-    private final Provider openAiCompatible;
 
     public ProviderFactory(List<Provider> providers) {
         this.providers = Objects.requireNonNull(providers, "providers");
-        this.openAiCompatible = providers.stream()
-                .filter(p -> p.supports("openai-compatible"))
-                .findFirst()
-                .orElse(null);
     }
 
     /**
-     * 按渠道协议家族键解析 Provider。
+     * 按渠道协议家族键（{@code nai_channel.protocol}）<b>精确</b>解析 Provider。
+     * <p><b>禁静默兜底</b>：openai 兼容变体（openai/openai-compatible/oneapi/newapi 等）由
+     * {@code OpenAiCompatibleProvider.supports()} 白名单精确命中而解析到 openai-compatible；其余未知/拼错的协议
+     * 直接抛配置错误——不再盲目回退 openai-compatible（否则错配鉴权头 → 连环 401 → 健康 Key 被误封）。
      *
      * @param providerKey 渠道声明的协议家族（如 "openai"/"claude"/"gemini"）
      */
     public Provider resolve(String providerKey) {
-        Provider hit = providers.stream()
+        if (providerKey == null || providerKey.isBlank()) {
+            throw GatewayException.of(GatewayErrorCode.NO_CHANNEL_AVAILABLE, "渠道未声明协议家族(protocol)");
+        }
+        return providers.stream()
                 .filter(p -> p.supports(providerKey))
                 .findFirst()
-                .orElse(openAiCompatible);   // 回退 openai 兼容（档①绝大多数上游）
-        if (hit == null) {
-            throw GatewayException.of(GatewayErrorCode.NO_CHANNEL_AVAILABLE,
-                    "无匹配 Provider 且无 openai-compatible 兜底: " + providerKey);
-        }
-        return hit;
+                .orElseThrow(() -> GatewayException.of(GatewayErrorCode.NO_CHANNEL_AVAILABLE,
+                        "未知渠道协议家族(protocol)=" + providerKey + "：无匹配 Provider（疑似协议配置错误·禁静默兜底 openai-compatible）"));
     }
 
     /**

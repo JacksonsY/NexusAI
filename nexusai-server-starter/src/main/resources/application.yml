@@ -59,8 +59,10 @@ nexusai:
       dialect: ${LOG_DB_DIALECT:mysql}            # 日志库方言独立于业务 db.type（mysql/postgresql）
     # ④ 请求体分离（log-body-dsn）：hash（默认·不存只 sha256）/ rdb（独立库 nai_request_body·gzip）/ oss（P2）
     body:
-      store: ${LOG_BODY_STORE:rdb}
-      collect: ${LOG_BODY_COLLECT:true}           # 全局采集开关（对齐 CF cf-aig-collect-log-payload）·请求+响应双采（流式聚合钳 5MB）
+      # 🔴 默认 hash（仅存 sha256·不落正文）+ 不采集：AI 网关正文=用户提示词，全量落库是隐私/合规最大项。
+      # 需留存正文的部署显式设 LOG_BODY_STORE=rdb + LOG_BODY_COLLECT=true（并自行满足合规/告知义务）。
+      store: ${LOG_BODY_STORE:hash}
+      collect: ${LOG_BODY_COLLECT:false}          # 全局采集开关（对齐 CF cf-aig-collect-log-payload）·请求+响应双采（流式聚合钳 5MB）
       gzip: ${LOG_BODY_GZIP:true}
       datasource:                                 # body.store=rdb 时（第三个独立连接·本地开发同库）
         url: ${LOG_BODY_DB_URL:jdbc:mysql://127.0.0.1:3306/nexusai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
@@ -150,7 +152,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        # 🔴 仅暴露 health（供 LB/容器探活·show-details=when_authorized 匿名只见状态）。
+        # info/metrics 在业务口 8600 无鉴权（SaTokenConfigure 仅拦 /admin/**），匿名暴露 = 运营数据泄露；
+        # prometheus 项此前无 micrometer-registry-prometheus 依赖属死配置。需 metrics 请绑独立 management.server.port 或纳入鉴权。
+        include: health
   endpoint:
     health:
       show-details: when_authorized

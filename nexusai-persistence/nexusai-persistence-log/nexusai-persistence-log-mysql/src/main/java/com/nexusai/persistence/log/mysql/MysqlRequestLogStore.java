@@ -2,6 +2,7 @@ package com.nexusai.persistence.log.mysql;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nexusai.persistence.log.LogColumns;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexusai.persistence.log.RequestLogPage;
@@ -66,6 +67,25 @@ public class MysqlRequestLogStore implements RequestLogStore {
         // 评审 LOW：排除 id——driver 始终掌握主键生成权，不信任领域模型携带的 id（防误传非空 id 绕过 ASSIGN_ID 雪花/撞键）
         BeanUtils.copyProperties(record, po, "id");
         mapper.insert(po);
+    }
+
+    @Override
+    public void saveBatch(List<RequestLogRecord> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<NaiRequestLog> pos = new ArrayList<>(records.size());
+        for (RequestLogRecord record : records) {
+            NaiRequestLog po = new NaiRequestLog();
+            BeanUtils.copyProperties(record, po, "id");
+            po.setId(IdWorker.getId());   // 多值批插不经 mapper.insert 的 ASSIGN_ID，显式补雪花主键（与 driver 掌握主键权一致）
+            if (po.getCreateDt() == null) {
+                po.setCreateDt(LocalDateTime.now());   // 独立日志库无 MetaObjectHandler：兜底 create_dt（与 toRecord/主库路径同口径）
+            }
+            pos.add(po);
+        }
+        // 单条多值 INSERT（原子）：一次往返落整批，规避逐行 insert 的写入吞吐上限；整批全成功或全失败，配合消费侧批失败回退逐条不产生重复行
+        mapper.insertBatch(pos);
     }
 
     @Override

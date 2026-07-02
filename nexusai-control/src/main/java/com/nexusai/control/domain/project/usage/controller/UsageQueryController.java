@@ -1,8 +1,5 @@
 package com.nexusai.control.domain.project.usage.controller;
 
-import com.nexusai.common.constant.GatewayConstants;
-import com.nexusai.common.exception.GatewayErrorCode;
-import com.nexusai.common.exception.GatewayException;
 import com.nexusai.common.model.PageQuery;
 import com.nexusai.common.model.PageResult;
 import com.nexusai.common.model.R;
@@ -78,7 +75,8 @@ public class UsageQueryController {
                                             @RequestParam(required = false) String orderBy,
                                             @RequestParam(defaultValue = "true") boolean orderDesc,
                                             ServerWebExchange exchange) {
-        RequestLogQuery q = buildQuery(pageNum, pageSize, scopeProject(exchange, projectCode), channelId, model, requestId,
+        PageQuery pq = PageQuery.of(pageNum, pageSize);   // 钳制 pageSize 上限（防 pageSize=1亿 拉爆内存·与 /logs 同口径）
+        RequestLogQuery q = buildQuery(pq.getPageNum(), pq.getPageSize(), scopeProject(exchange, projectCode), channelId, model, requestId,
                 modality, streamMode, success, status, apiFormat, clientFamily, statusFilter,
                 search, hideUnknown, hours, beginTime, endTime, orderBy, orderDesc);
         return blocking(() -> R.ok(usageQuery.requests(q)));
@@ -151,23 +149,19 @@ public class UsageQueryController {
         return blocking(() -> R.ok(usageQuery.requestBody(requestId, null)));
     }
 
-    /** cURL 重放命令（生成对上游的重放·鉴权脱敏占位）：项目令牌仅可重放本项目请求。 */
+    /**
+     * cURL 重放命令（生成对<b>上游</b>的重放·鉴权脱敏占位·但含捕获的请求正文明文）：经 {@link CallerScope#scopeProject}
+     * 收口——单项目 M2M 令牌强制本项目 / 多项目运维须落唯一授权项目（多于一个则要求显式指定·失败即拒）/ 平台令牌不限。
+     * 🔴 修复：原先只读单项目属性（{@code CALLER_PROJECT_ATTR}），对多项目人类运维账号（走 {@code CALLER_PROJECTS_ATTR}）
+     * 恒判为不限，可凭任意 requestId 跨项目读请求正文明文——改用 {@link CallerScope} 覆盖单/多项目两态。
+     */
     @GetMapping("/requests/{requestId}/curl")
     public Mono<R<Map<String, Object>>> requestCurl(@PathVariable String requestId, ServerWebExchange exchange) {
-        String caller = callerProject(exchange);
+        String caller = scopeProject(exchange, null);
         return blocking(() -> {
             Map<String, Object> data = usageQuery.replayCurl(requestId, caller);
             return data == null ? R.<Map<String, Object>>fail("请求不存在: " + requestId) : R.ok(data);
         });
-    }
-
-    /**
-     * 调用方项目作用域（{@code CallerScopeWebFilter} 写入 {@link GatewayConstants#CALLER_PROJECT_ATTR}）：
-     * 项目作用域令牌返回其 projectCode（只能查本项目）；平台作用域令牌/控制台会话返回 null（无限制）。
-     */
-    private static String callerProject(ServerWebExchange exchange) {
-        Object v = exchange.getAttribute(GatewayConstants.CALLER_PROJECT_ATTR);
-        return v == null ? null : v.toString();
     }
 
     /** 可行级过滤端点：委托 {@link CallerScope}（单项目 M2M 强制本项目 / 多项目运维须落授权集 / 平台令牌沿用入参）。 */

@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RScript;
-import org.redisson.api.RateIntervalUnit;
 import org.redisson.api.RateType;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
@@ -16,9 +15,11 @@ import java.time.Duration;
 import java.util.Collections;
 
 /**
- * 多维限流（Redisson RRateLimiter，apiKey/IP/user 维度 RPM；Redis 服务端时钟防多实例漂移）
- * + TPM 软闸门（分钟窗口累计 token，请求前判、响应后累加；评审 MEDIUM·补 token 维度限流）。
- * 并发槽（Key 级 ZSET+Lua 原子占释）见 {@link ConcurrencySlot}。
+ * 多维限流（Redisson RRateLimiter，apiKey/IP/user 维度 RPM）+ TPM 软闸门（分钟窗口累计 token，
+ * 请求前判、响应后累加；评审 MEDIUM·补 token 维度限流）。并发槽（Key 级 ZSET+Lua 原子占释）见 {@link ConcurrencySlot}。
+ * <p><b>RPM 时钟基准</b>：RRateLimiter 的滑窗时间取<b>各 JVM 本地时钟</b>（客户端 {@code System.currentTimeMillis()}
+ * 作 zset score，<b>非</b> Redis 服务端时钟）——多实例须靠 <b>NTP 纪律</b>约束时钟漂移，漂移过大时分钟窗口对不齐
+ * 会致 RPM 轻微超卖/少卖。硬并发闸 {@link ConcurrencySlot} 才用 {@code redis.call('TIME')} 服务端时钟根除漂移。
  *
  * @author nexusai
  */
@@ -42,6 +43,14 @@ public class RateLimiterService {
      *  token/workspace 基数（B2C 散户级·随建删轮换）无界增长导致的堆内存泄漏（评审 HIGH·与 routing/auth 有界缓存纪律一致）。 */
     private static final int APPLIED_RATES_MAX = 100_000;
     private static final Duration APPLIED_RATES_IDLE_TTL = Duration.ofMinutes(10);
+    /**
+     * RRateLimiter 键的空闲存活（keepAlive）：每次 acquire 滚动 pexpire 刷新三键（config/value/permits），
+     * 空闲超此时长 Redis 自动回收，杜绝散户级 key 轮换下 {@code nai:rl:*} 无界泄漏（legacy 4 参重载 keepAlive=0
+     * → 键永不过期）。<b>必须 &gt; {@link #APPLIED_RATES_IDLE_TTL}</b>：appliedRates 是「本节点已初始化该限流器」的
+     * 本地记忆，若 Redis 键先于本地记忆过期，会出现「本地记为已应用→跳过 setRate→acquire 命中未初始化限流器
+     * assert 失败」；令键 TTL 严格长于本地记忆即可规避（本地先失效则下次请求 setRate 重新初始化）。
+     */
+    private static final Duration RATE_LIMITER_KEEP_ALIVE = APPLIED_RATES_IDLE_TTL.multipliedBy(2);
 
     private final RedissonClient redisson;
 
@@ -69,12 +78,12 @@ public class RateLimiterService {
         }
         String key = KEY_PREFIX + dimension + ":" + id;
         RRateLimiter limiter = redisson.getRateLimiter(key);
-        // 🔴 速率随配置变更生效：旧实现 trySetRate「已存在不覆盖」+ RRateLimiter 无 TTL，会让改后的 rpm_limit
-        // 在所有节点被永久忽略（除非手工删 Redis key）。改为按本节点已应用速率对比，仅在速率变化（或本节点首次见到
-        // 该 key）时 setRate 强制刷新——避免每请求都 setRate（setRate 会重置令牌桶）。
+        // 🔴 速率随配置变更生效：旧实现 trySetRate「已存在不覆盖」会让改后的 rpm_limit 在所有节点被永久忽略
+        // （除非手工删 Redis key）。改为按本节点已应用速率对比，仅在速率变化（或本节点首次见到该 key）时 setRate
+        // 强制刷新——避免每请求都 setRate（setRate 会重置令牌桶）。setRate 带 keepAlive Duration：键空闲自过期防无界泄漏。
         Long applied = appliedRates.getIfPresent(key);
         if (applied == null || applied != ratePerMin) {
-            limiter.setRate(RateType.OVERALL, ratePerMin, 1, RateIntervalUnit.MINUTES);
+            limiter.setRate(RateType.OVERALL, ratePerMin, Duration.ofMinutes(1), RATE_LIMITER_KEEP_ALIVE);
             appliedRates.put(key, ratePerMin);
         }
         return limiter.tryAcquire(1);

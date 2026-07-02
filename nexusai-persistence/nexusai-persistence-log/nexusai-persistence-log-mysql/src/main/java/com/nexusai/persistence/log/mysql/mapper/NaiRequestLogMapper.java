@@ -3,6 +3,7 @@ package com.nexusai.persistence.log.mysql.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nexusai.persistence.log.mysql.NaiRequestLog;
 import com.nexusai.persistence.log.stat.PerfFilter;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -18,6 +19,27 @@ import java.util.Map;
  */
 @Mapper
 public interface NaiRequestLogMapper extends BaseMapper<NaiRequestLog> {
+
+    /**
+     * 批量插入（单条多值 INSERT·一次往返落整批）：替代逐行 insert 的写入吞吐上限。
+     * <p>不经 {@code mapper.insert} 的 {@code ASSIGN_ID}/{@code MetaObjectHandler}，故 store 侧须先补齐主键 id
+     * 与 create_dt（见 {@code MysqlRequestLogStore#saveBatch}）；update_dt 由 DDL 默认值承接不写。
+     */
+    @Insert("<script>"
+            + "insert into nai_request_log (id, request_id, trace_id, project_code, workspace_id, channel_id, key_id, "
+            + "model, target_model, modality, stream_mode, api_format, endpoint_api_format, "
+            + "prompt_tokens, completion_tokens, cache_tokens, cache_creation_tokens, total_tokens, cost_usd, "
+            + "status, http_status, error_code, retry_count, fallback_count, usage_source, "
+            + "ttft_ms, duration_ms, client_ip, user_agent, client_family, prompt_hash, create_dt) values "
+            + "<foreach collection='list' item='it' separator=','>"
+            + "(#{it.id}, #{it.requestId}, #{it.traceId}, #{it.projectCode}, #{it.workspaceId}, #{it.channelId}, #{it.keyId}, "
+            + "#{it.model}, #{it.targetModel}, #{it.modality}, #{it.streamMode}, #{it.apiFormat}, #{it.endpointApiFormat}, "
+            + "#{it.promptTokens}, #{it.completionTokens}, #{it.cacheTokens}, #{it.cacheCreationTokens}, #{it.totalTokens}, #{it.costUsd}, "
+            + "#{it.status}, #{it.httpStatus}, #{it.errorCode}, #{it.retryCount}, #{it.fallbackCount}, #{it.usageSource}, "
+            + "#{it.ttftMs}, #{it.durationMs}, #{it.clientIp}, #{it.userAgent}, #{it.clientFamily}, #{it.promptHash}, #{it.createDt})"
+            + "</foreach>"
+            + "</script>")
+    void insertBatch(@Param("list") List<NaiRequestLog> list);
 
     /**
      * 按渠道（或总体）P90/P99 分位（性能分析页）：{@code PERCENT_RANK()} 窗口近似（对齐既有口径）。

@@ -18,7 +18,10 @@ import java.util.stream.Collectors;
 
 /**
  * 项目 M2M 令牌缓存（控制面 /admin/** 鉴权热路径·全内存非阻塞）。
- * <p>启动时全量灌入 active 项目（token → {@link NaiProject}），{@link ProjectAdminController} 增删改后调
+ * <p>🔴 令牌哈希化（对齐 sk- 存储范式）：{@code nai_project.token} 落库仅存 SHA-256（明文永不落库·创建/轮转时一次性返回）。
+ * 故本缓存以 <b>token 的 sha256</b> 为 map key（DB 值本身即 hash），{@link #match(String)} 收到明文后先 {@link TokenHash#sha256}
+ * 再查表——命中即抗计时（无需额外恒时比较）。
+ * <p>启动时全量灌入 active 项目（tokenHash → {@link NaiProject}），{@link ProjectAdminController} 增删改后调
  * {@link #broadcastReload()}（本节点重载 + RTopic 广播·各节点即时重载）。
  * 鉴权过滤器（{@link SaTokenConfigure}）只做 map 查找——绝不在 Netty 事件线程打 DB（项目数极少·全内存安全）。
  * <p>替代原单个静态 {@code nexusai.admin.token}：多项目凭证隔离 + 可独立吊销/轮转。
@@ -47,7 +50,7 @@ public class ProjectTokenCache {
         reload();
     }
 
-    /** 本节点重载（增删改后 + 收到广播时调用·不再广播·防回环）。 */
+    /** 本节点重载（增删改后 + 收到广播时调用·不再广播·防回环）。map key = {@code nai_project.token}（已是 sha256·非明文）。 */
     public void reload() {
         try {
             Map<String, NaiProject> map = projectMapper.selectList(
@@ -72,11 +75,11 @@ public class ProjectTokenCache {
         }
     }
 
-    /** 令牌命中的 active 项目；未命中返回 null（不放行）。 */
+    /** 令牌命中的 active 项目；未命中返回 null（不放行）。入参为<b>明文</b>，内部 sha256 后查表（DB 仅存 hash·抗计时）。 */
     public NaiProject match(String token) {
         if (token == null || token.isBlank()) {
             return null;
         }
-        return ref.get().get(token);
+        return ref.get().get(TokenHash.sha256(token));
     }
 }

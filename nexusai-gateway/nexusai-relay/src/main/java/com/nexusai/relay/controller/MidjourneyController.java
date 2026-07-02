@@ -86,7 +86,7 @@ public class MidjourneyController {
     private Mono<Map<String, Object>> submitTask(ServerWebExchange exchange, String action) {
         return TaskHttp.body(exchange).flatMap(b -> Mono.fromCallable(() -> {
             NaiToken token = taskRelay.authenticate(auth(exchange));
-            NaiTask task = taskRelay.submit(token, MODALITY, action, MODALITY, b);
+            NaiTask task = taskRelay.submit(token, MODALITY, action, MODALITY, b, TaskHttp.clientIp(exchange));
             return submitEnvelope(task);
         }).subscribeOn(Schedulers.boundedElastic()));
     }

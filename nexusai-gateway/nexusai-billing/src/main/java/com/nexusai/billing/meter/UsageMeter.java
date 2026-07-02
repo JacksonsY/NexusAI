@@ -55,6 +55,8 @@ public class UsageMeter {
         BigDecimal usd = tokenUsd
                 .add(r.perImageFee().multiply(BigDecimal.valueOf(Math.max(0, images))))
                 .add(r.perRequestFee());
-        return UsdAmount.toMicros(usd);
+        // 🔴 出口非负夹钳：任一费率被误配为负（如录入 -0.001）会使 cost<0 → settle 退款为正 → 每请求净增余额（凭空印钱）。
+        // 管理端应另做费率 ≥0 写入校验，此处为最后防线。
+        return UsdAmount.toMicros(usd.max(BigDecimal.ZERO));
     }
 }

@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -119,6 +120,7 @@ public class ModelAdminController {
     public Mono<R<Long>> create(@RequestBody NaiModel model) {
         return Mono.fromCallable(() -> {
             validateAliasPatterns(model.getAliasPatterns());
+            validateRates(model);
             model.setId(null);
             if (model.getStatus() == null) {
                 model.setStatus(1);
@@ -133,6 +135,7 @@ public class ModelAdminController {
     public Mono<R<Void>> update(@PathVariable Long id, @RequestBody NaiModel model) {
         return Mono.fromCallable(() -> {
             validateAliasPatterns(model.getAliasPatterns());
+            validateRates(model);
             model.setId(id);
             modelMapper.updateById(model);
             configChangePublisher.publish();
@@ -205,6 +208,26 @@ public class ModelAdminController {
             } catch (Exception e) {
                 throw new IllegalArgumentException("别名正则非法: " + p);
             }
+        }
+    }
+
+    /**
+     * 费率/费用非负校验（写入口防线）：任一费率被误配为负（如录入 -0.001）会使成本为负 → settle 退款为正 → 每请求净增余额
+     * （凭空印钱）。与 {@code UsageMeter} 计量出口的非负夹钳构成双保险，此处在写入口即拒绝。
+     */
+    private static void validateRates(NaiModel model) {
+        checkNonNegative(model.getInputRate(), "inputRate");
+        checkNonNegative(model.getOutputRate(), "outputRate");
+        checkNonNegative(model.getCachedInputRate(), "cachedInputRate");
+        checkNonNegative(model.getWriteCachedRate(), "writeCachedRate");
+        checkNonNegative(model.getPerRequestFee(), "perRequestFee");
+        checkNonNegative(model.getPerImageFee(), "perImageFee");
+        checkNonNegative(model.getCostBasis(), "costBasis");
+    }
+
+    private static void checkNonNegative(BigDecimal v, String field) {
+        if (v != null && v.signum() < 0) {
+            throw new IllegalArgumentException("费率/费用不能为负: " + field);
         }
     }
 }

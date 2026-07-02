@@ -34,6 +34,13 @@ import java.util.Map;
  */
 public class GeminiChatTransformer implements ChatTransformer {
 
+    /**
+     * Gemini 模型占位哨兵：Gemini 原生请求体不含 model（模型在 URL path），入站解析拿不到模型时以此占位，
+     * <b>杜绝产出 {@code null} model</b>（跨协议出站 model=null → 上游 400）。真实模型由 relay 出站装配
+     * 依 peek.model（URL 提取）回填——本模块不越界读 URL；relay 侧回填由他人处理。
+     */
+    public static final String MODEL_FROM_URL_PLACEHOLDER = "__nexusai_gemini_model_from_url__";
+
     @Override
     public ApiFormat format() {
         return ApiFormat.GEMINI;
@@ -42,7 +49,8 @@ public class GeminiChatTransformer implements ChatTransformer {
     @Override
     public CanonicalChatRequest toCanonicalRequest(byte[] body) {
         JsonNode root = JsonUtils.readTree(body);
-        String model = root.path("model").asText(null);
+        // Gemini 原生体不带 model（模型在 URL path）；缺失时置哨兵占位（禁 null·由 relay 依 peek.model 回填）
+        String model = root.path("model").asText(MODEL_FROM_URL_PLACEHOLDER);
         String system = null;
         JsonNode si = root.path("systemInstruction");
         if (si.isObject()) {
@@ -175,7 +183,8 @@ public class GeminiChatTransformer implements ChatTransformer {
                 textOfParts(parts),
                 finish,
                 um.path("promptTokenCount").asInt(0),
-                um.path("candidatesTokenCount").asInt(0),
+                // 🔴 思维链 thoughtsTokenCount 并入 completion（Gemini 2.5·按输出价计费），否则漏计资损
+                um.path("candidatesTokenCount").asInt(0) + um.path("thoughtsTokenCount").asInt(0),
                 ext);
     }
 
@@ -372,14 +381,21 @@ public class GeminiChatTransformer implements ChatTransformer {
         return null;
     }
 
-    private static String mapFinish(String f) {
+    /**
+     * Gemini finishReason → OpenAI finish_reason（非流式 {@link #toCanonicalResponse} 与流式
+     * {@link OpenAiSseConverter#feedBytes} 共用·统一口径不重复）：STOP→stop、MAX_TOKENS→length、
+     * SAFETY/RECITATION→content_filter（内容过滤·不再误判为正常 stop 致客户端误读完成）；
+     * 未知值保守默认 stop（不再 toLowerCase 透传非法枚举）。入参 null 返回 null。
+     */
+    static String mapFinish(String f) {
         if (f == null) {
             return null;
         }
         return switch (f) {
             case "STOP" -> "stop";
             case "MAX_TOKENS" -> "length";
-            default -> f.toLowerCase();
+            case "SAFETY", "RECITATION" -> "content_filter";
+            default -> "stop";
         };
     }
 

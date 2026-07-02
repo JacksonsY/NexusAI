@@ -9,7 +9,8 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 
 /**
- * UsageEvent outbox（用量事件可靠投递·投递确认后短保留；与 nai_request_log 同源）。
+ * UsageEvent outbox（用量事件权威账本·与 nai_request_log 同源）：
+ * 可靠投递经 Redis Stream 推送业务面，本表作兜底账本重建计费（Stream 挂了/脏消息仍可对账）。
  *
  * @author nexusai
  */
@@ -42,6 +43,4 @@ public class NaiUsageLog extends BasePO {
     private BigDecimal costUsd;
 
     private Integer status;
-    /** 是否已投递到业务面 */
-    private Boolean delivered;
 }

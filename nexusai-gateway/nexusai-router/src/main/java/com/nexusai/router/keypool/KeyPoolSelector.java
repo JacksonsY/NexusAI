@@ -23,7 +23,7 @@ import java.util.UUID;
  * ② 粘性（{@link StickyAffinity} 上次成功 Key 短记忆·更具体优先）→
  * ③ 加权 TopK（{@link KeyPoolScorer} 多因子打分 + {@link TopKWeightedOrder} 纯算法排序）→
  * ④ 并发槽（{@link ConcurrencySlot} ZSET+Lua 原子占用）。
- * <p>过滤：状态启用（缓存已滤）+ 不在 exclude（容错换 Key）+ {@link KeyHealthManager} 熔断惰性复活。
+ * <p>过滤：状态启用（缓存已滤）+ 不在 exclude（容错换 Key）+ {@link KeyHealthManager} 熔断惰性复活（半开单飞探测·防复活即被并发打爆）。
  * 全耗尽 → 显式拒绝（不静默兜底）。
  * <p>层序说明：②粘性命中即用（反映真实最近成功 = prompt cache 实际所在）；冷启动/粘性失效时 ①锚定给确定性首选，
  * 二者都只是「首选」，槽满/劣化都会落到 ③④ 兜底，绝不卡死。
@@ -56,7 +56,9 @@ public class KeyPoolSelector {
         long now = System.currentTimeMillis();
         List<NaiChannelKey> candidates = routeCache.keys(channelId).stream()
                 .filter(k -> excludeKeyIds == null || !excludeKeyIds.contains(k.getId()))
-                .filter(k -> healthManager.schedulable(k.getId(), now))
+                // 熔断惰性复活 + 半开单飞：熔断刚到期的 Key 只放一个探测请求入候选，其余并发请求视为不可用（防探测风暴）。
+                // tryAcquireForDispatch 有副作用（CAS 抢探测名额），故仅数据面选号调用，不与控制面纯读 schedulable 混用。
+                .filter(k -> healthManager.tryAcquireForDispatch(k.getId(), now))
                 .toList();
         if (candidates.isEmpty()) {
             throw GatewayException.of(GatewayErrorCode.NO_KEY_AVAILABLE,

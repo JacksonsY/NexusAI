@@ -66,27 +66,83 @@ public final class RequestPeeker {
         return new ChatRequestPeek(model.trim(), false, false, 0);
     }
 
-    /** 从 multipart 字节里抽取某个文本表单字段值（ISO-8859-1 保字节定位·够鲁棒地取 model 这类短文本字段）。 */
+    /**
+     * 从 multipart 字节里抽取某个<b>表单字段</b>值（防上传文件内容伪造 {@code name="model"} 冒名低价模型）：
+     * 依 body 首行分隔符还原 boundary（RFC 2046：HTTP multipart 体以 {@code --boundary} 开头，无需依赖调用方传入
+     * Content-Type 头），按 boundary 切分 part，<b>仅在 part 的 header 段（Content-Disposition）精确匹配
+     * {@code name="field"}</b> 才取其 value——不裸扫描整体字节，故文件正文里藏的 {@code name="model"} 无法冒名。
+     * 无法还原 boundary 或无匹配字段则回退返回 null（由调用方按 BAD_REQUEST 拒绝）。
+     */
     private static String extractMultipartField(byte[] body, String field) {
         if (body == null || body.length == 0) {
             return null;
         }
+        // ISO-8859-1 保字节：定位分隔符/头部（纯 ASCII 结构字符），字段值取出后再按 UTF-8 还原
         String s = new String(body, StandardCharsets.ISO_8859_1);
-        int idx = s.indexOf("name=\"" + field + "\"");
-        if (idx < 0) {
+        String boundary = leadingBoundary(s);
+        if (boundary == null) {
             return null;
         }
-        int valStart = s.indexOf("\r\n\r\n", idx);
-        if (valStart < 0) {
+        String delimiter = "--" + boundary;
+        int pos = 0;
+        while (true) {
+            int partStart = s.indexOf(delimiter, pos);
+            if (partStart < 0) {
+                return null;
+            }
+            partStart += delimiter.length();
+            if (s.startsWith("--", partStart)) {
+                return null;   // 收尾分隔符 "--boundary--"：已无更多 part
+            }
+            int headerEnd = s.indexOf("\r\n\r\n", partStart);
+            if (headerEnd < 0) {
+                return null;
+            }
+            String headers = s.substring(partStart, headerEnd);
+            int valEnd = s.indexOf("\r\n" + delimiter, headerEnd + 4);
+            if (valEnd < 0) {
+                valEnd = s.length();
+            }
+            if (field.equals(dispositionName(headers))) {
+                String value = s.substring(headerEnd + 4, valEnd);
+                return new String(value.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+            }
+            pos = valEnd;
+        }
+    }
+
+    /** multipart 体首行即分隔符 {@code --boundary}（RFC 2046），据此还原 boundary（免依赖 Content-Type 头·本模块拿不到）。 */
+    private static String leadingBoundary(String s) {
+        if (!s.startsWith("--")) {
             return null;
         }
-        valStart += 4;
-        int valEnd = s.indexOf("\r\n--", valStart);
-        if (valEnd < 0) {
-            valEnd = s.length();
+        int eol = s.indexOf("\r\n");
+        if (eol <= 2) {
+            return null;
         }
-        return new String(s.substring(valStart, valEnd).getBytes(StandardCharsets.ISO_8859_1),
-                StandardCharsets.UTF_8);
+        return s.substring(2, eol).stripTrailing();
+    }
+
+    /** 从 part 的 header 段取 Content-Disposition 的 {@code name} 参数值（精确取字段名·防 filename 内混入 name= 伪造）。 */
+    private static String dispositionName(String headers) {
+        for (String line : headers.split("\r\n")) {
+            if (line.toLowerCase().startsWith("content-disposition:")) {
+                return headerParam(line, "name");
+            }
+        }
+        return null;
+    }
+
+    /** 从 header 行取 {@code param="value"} 的 value（不含引号）；无则 null。 */
+    private static String headerParam(String line, String param) {
+        String needle = param + "=\"";
+        int i = line.indexOf(needle);
+        if (i < 0) {
+            return null;
+        }
+        i += needle.length();
+        int end = line.indexOf('"', i);
+        return end < 0 ? null : line.substring(i, end);
     }
 
     public static ChatRequestPeek peek(JsonNode body) {

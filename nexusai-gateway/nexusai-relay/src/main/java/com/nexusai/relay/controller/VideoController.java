@@ -85,7 +85,7 @@ public class VideoController {
         return TaskHttp.body(exchange).flatMap(b -> Mono.fromCallable(() -> {
             NaiToken token = taskRelay.authenticate(TaskHttp.authHeader(exchange));
             String model = TaskHttp.modelOf(b, MODALITY);
-            NaiTask task = taskRelay.submit(token, MODALITY, action, model, b);
+            NaiTask task = taskRelay.submit(token, MODALITY, action, model, b, TaskHttp.clientIp(exchange));
             return envelope(task, model);
         }).subscribeOn(Schedulers.boundedElastic()));
     }

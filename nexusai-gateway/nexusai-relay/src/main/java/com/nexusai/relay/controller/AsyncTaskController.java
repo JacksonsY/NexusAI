@@ -7,9 +7,11 @@ import com.nexusai.common.exception.GatewayException;
 import com.nexusai.common.util.JsonUtils;
 import com.nexusai.persistence.po.NaiTask;
 import com.nexusai.persistence.po.NaiToken;
+import com.nexusai.relay.task.TaskHttp;
 import com.nexusai.relay.task.TaskRelayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -35,11 +37,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AsyncTaskController {
 
+    /** 请求体聚合硬上限（64MB·与 {@code RelayOrchestrator} 同口径）：防未鉴权大体打爆堆内存（DoS）。 */
+    private static final int MAX_BODY_BYTES = 64 * 1024 * 1024;
+
     private final TaskRelayService taskRelay;
 
     @PostMapping("/v1/tasks/submit")
     public Mono<Void> submit(ServerWebExchange exchange) {
-        return DataBufferUtils.join(exchange.getRequest().getBody())
+        return DataBufferUtils.join(exchange.getRequest().getBody(), MAX_BODY_BYTES)
+                .onErrorMap(DataBufferLimitException.class,
+                        e -> GatewayException.of(GatewayErrorCode.PAYLOAD_TOO_LARGE, "请求体超过上限 " + MAX_BODY_BYTES + " 字节"))
                 .map(AsyncTaskController::toUtf8)
                 .defaultIfEmpty("{}")
                 .flatMap(body -> Mono.fromCallable(() -> doSubmit(exchange, body))
@@ -69,7 +76,7 @@ public class AsyncTaskController {
         String modality = root.path("modality").asText("midjourney");
         String action = root.path("action").asText(null);
 
-        return taskView(taskRelay.submit(token, modality, action, model, body));
+        return taskView(taskRelay.submit(token, modality, action, model, body, TaskHttp.clientIp(exchange)));
     }
 
     private static Map<String, Object> taskView(NaiTask t) {

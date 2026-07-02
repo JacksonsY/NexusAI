@@ -24,6 +24,9 @@ import java.util.Map;
  */
 public final class OpenAiSseConverter {
 
+    /** 单 SSE 行累积字节上限（防异常上游发无换行超长流 → 单请求 lineBuf 无界堆积·评审缺口5）。 */
+    public static final int MAX_LINE_BYTES = 4 * 1024 * 1024;
+
     private OpenAiSseConverter() {
     }
 
@@ -39,6 +42,8 @@ public final class OpenAiSseConverter {
         public int cacheCreationTokens;
         /** 跨 DataBuffer 的半行原始字节缓存（整行才 UTF-8 decode·防多字节字符跨块乱码·评审缺口4） */
         public final ByteArrayOutputStream lineBuf = new ByteArrayOutputStream();
+        /** 当前行是否已超 {@link #MAX_LINE_BYTES} 被丢弃（跨块保持·至行尾 {@code \n} 复位·防单请求堆无界·评审缺口5） */
+        public boolean lineOverflow;
         /** OpenAI tool_call 下一序号（仅 tool_use 块占用，text 块不占） */
         public int toolIndexCounter;
         /** 上游块 index → OpenAI tool_call index（区分 text/tool 混排时的序号） */
@@ -66,11 +71,21 @@ public final class OpenAiSseConverter {
         StringBuilder out = new StringBuilder();
         for (byte b : chunk) {
             if (b == '\n') {
-                String line = new String(st.lineBuf.toByteArray(), StandardCharsets.UTF_8).trim();
+                boolean overflow = st.lineOverflow;
+                String line = overflow ? null : new String(st.lineBuf.toByteArray(), StandardCharsets.UTF_8).trim();
                 st.lineBuf.reset();
-                processLine(upstream, line, st, out);
-            } else {
-                st.lineBuf.write(b);
+                st.lineOverflow = false;
+                if (!overflow) {
+                    processLine(upstream, line, st, out);   // 超限行整行丢弃·不解析半截脏数据
+                }
+            } else if (!st.lineOverflow) {
+                if (st.lineBuf.size() >= MAX_LINE_BYTES) {
+                    // 单行累积超上限：丢弃本行已缓冲字节并进入丢弃模式（剩余字节直到 \n 全忽略·防无界堆积·评审缺口5）
+                    st.lineBuf.reset();
+                    st.lineOverflow = true;
+                } else {
+                    st.lineBuf.write(b);
+                }
             }
         }
         return out.toString();
@@ -173,8 +188,9 @@ public final class OpenAiSseConverter {
         if (um.has("promptTokenCount")) {
             st.promptTokens = um.path("promptTokenCount").asInt(st.promptTokens);   // Gemini prompt 已含 cached
         }
-        if (um.has("candidatesTokenCount")) {
-            st.completionTokens = um.path("candidatesTokenCount").asInt(st.completionTokens);
+        if (um.has("candidatesTokenCount") || um.has("thoughtsTokenCount")) {
+            // 🔴 思维链 thoughtsTokenCount 并入 completion（Gemini 2.5·Google 按输出价计费）；usage 为累计值，末块覆盖
+            st.completionTokens = um.path("candidatesTokenCount").asInt(0) + um.path("thoughtsTokenCount").asInt(0);
         }
         if (um.has("cachedContentTokenCount")) {
             st.cachedTokens = um.path("cachedContentTokenCount").asInt(st.cachedTokens);
@@ -182,7 +198,8 @@ public final class OpenAiSseConverter {
         JsonNode cand = n.path("candidates").path(0);
         String fr = cand.path("finishReason").asText("");
         if (!fr.isEmpty()) {
-            st.finishReason = "MAX_TOKENS".equals(fr) ? "length" : "stop";
+            // 与非流式 Gemini 转换共用同一映射：MAX_TOKENS→length、SAFETY/RECITATION→content_filter、STOP/未知→stop
+            st.finishReason = GeminiChatTransformer.mapFinish(fr);
         }
         JsonNode parts = cand.path("content").path("parts");
         if (!parts.isArray()) {

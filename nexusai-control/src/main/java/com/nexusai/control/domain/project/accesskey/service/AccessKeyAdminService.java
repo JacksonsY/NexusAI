@@ -11,6 +11,7 @@ import com.nexusai.common.exception.GatewayErrorCode;
 import com.nexusai.common.exception.GatewayException;
 import com.nexusai.common.model.PageQuery;
 import com.nexusai.common.model.PageResult;
+import com.nexusai.control.api.security.TokenHash;
 import com.nexusai.control.domain.project.accesskey.dto.AccessKeyCreateRequest;
 import com.nexusai.control.domain.project.accesskey.dto.AccessKeyCreateResponse;
 import com.nexusai.control.domain.project.accesskey.dto.AccessKeyListItem;
@@ -29,11 +30,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -256,7 +254,7 @@ public class AccessKeyAdminService {
     private GeneratedKey generateUniqueKey() {
         for (int i = 0; i < MAX_GENERATE_ATTEMPTS; i++) {
             String plain = generatePlainKey();
-            String hash = sha256(plain);
+            String hash = TokenHash.sha256(plain);
             NaiToken exists = tokenMapper.selectOne(new LambdaQueryWrapper<NaiToken>().eq(NaiToken::getKeyHash, hash));
             if (exists == null) {
                 return new GeneratedKey(plain, hash);
@@ -269,15 +267,6 @@ public class AccessKeyAdminService {
         byte[] buf = new byte[GENERATED_KEY_BYTES];
         RANDOM.nextBytes(buf);
         return "sk-" + Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
-    }
-
-    private static String sha256(String raw) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(md.digest(raw.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw GatewayException.of(GatewayErrorCode.INTERNAL_ERROR, "SHA-256 计算失败");
-        }
     }
 
     private static String normalizeName(String value) {

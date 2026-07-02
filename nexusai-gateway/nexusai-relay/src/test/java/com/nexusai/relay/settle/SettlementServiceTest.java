@@ -2,6 +2,7 @@ package com.nexusai.relay.settle;
 
 import com.nexusai.billing.config.UsdRate;
 import com.nexusai.billing.meter.UsageMeter;
+import com.nexusai.billing.quota.FreezeReconciler;
 import com.nexusai.billing.quota.QuotaLedger;
 import com.nexusai.persistence.po.NaiToken;
 import com.nexusai.relay.context.RelayContext;
@@ -33,7 +34,8 @@ class SettlementServiceTest {
             BigDecimal.ZERO, null, BigDecimal.ZERO, new BigDecimal("0.04"));
 
     // computeSettlement 仅依赖 usageMeter，其余依赖传 null（纯函数·无 Redis）
-    private final SettlementService settlement = new SettlementService(null, new UsageMeter(), null, null, null);
+    private final SettlementService settlement =
+            new SettlementService(null, new UsageMeter(), null, null, null, mock(FreezeReconciler.class));
 
     private RelayContext ctx(String path, Integer status, boolean aborted, int bodyLen) {
         RelayContext ctx = new RelayContext();
@@ -112,7 +114,7 @@ class SettlementServiceTest {
     @Test
     void refundAllRefundsExactlyOnceAcrossRepeatCalls() {
         QuotaLedger ledger = mock(QuotaLedger.class);
-        SettlementService svc = new SettlementService(ledger, new UsageMeter(), null, null, null);
+        SettlementService svc = new SettlementService(ledger, new UsageMeter(), null, null, null, mock(FreezeReconciler.class));
         RelayContext ctx = refundCtx();
 
         svc.refundAll(ctx);
@@ -127,7 +129,7 @@ class SettlementServiceTest {
         // 模拟「成功路径 doSettle 已抢占门闩」（已按真实 usage 多退少补）后，写客户端出错触发 refundAll：
         // 必须 no-op——否则把已计费的成功请求全额退 = 白嫖（评审 fix 2 HIGH 回归点）。
         QuotaLedger ledger = mock(QuotaLedger.class);
-        SettlementService svc = new SettlementService(ledger, new UsageMeter(), null, null, null);
+        SettlementService svc = new SettlementService(ledger, new UsageMeter(), null, null, null, mock(FreezeReconciler.class));
         RelayContext ctx = refundCtx();
 
         ctx.tryStartSettle();   // doSettle 已占门闩
