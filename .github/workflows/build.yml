@@ -2,13 +2,15 @@ name: build-jar
 
 # 单 jar 构建：拉子模块前端(admin/web) → pnpm 构建 → dist 拷入 classpath:/admin/ → mvn 打可执行 jar
 on:
-  push:
-    branches: [main, dev]
-    tags: ['v*', '[0-9]*']
-  pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Git tag to build and publish (leave blank to build the selected branch)
+        required: false
+        type: string
 
 # 顶层最小权限（只读）；仅发布 job 在其内部提权 contents: write
+
 permissions:
   contents: read
 
@@ -18,7 +20,7 @@ jobs:
     name: Backend CI (verify)
     runs-on: ubuntu-latest
     # 分支 push 与 PR 跑 CI；tag 走下方发布 job，避免重复
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/'))
+    if: inputs.tag == ''
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,6 +48,7 @@ jobs:
       - name: Checkout (with submodules)
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           submodules: recursive
 
       # ---- 前端：构建控制台 dist ----
@@ -87,24 +90,27 @@ jobs:
       - name: Maven package
         run: mvn -B -ntp clean package -DskipTests
 
-      # 产物带版本号（tag 名；手动触发用分支名）：nexusai-server-<ref>.jar
+      # 产物带版本号：nexusai-server-<ref>.jar
       - name: Name jar with version
-        run: cp nexusai-server-starter/target/nexusai-server-starter.jar "nexusai-server-${{ github.ref_name }}.jar"
+        env:
+          RELEASE_REF: ${{ inputs.tag || github.ref_name }}
+        run: cp nexusai-server-starter/target/nexusai-server-starter.jar "nexusai-server-${RELEASE_REF}.jar"
 
       - name: Upload jar artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nexusai-server-${{ github.ref_name }}
-          path: nexusai-server-${{ github.ref_name }}.jar
+          name: nexusai-server-${{ inputs.tag || github.ref_name }}
+          path: nexusai-server-${{ inputs.tag || github.ref_name }}.jar
           if-no-files-found: error
 
       # 打 tag 时把 jar 发到 GitHub Release（手动 workflow_dispatch 不触发）
       - name: Publish to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: inputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
-          name: NexusAI ${{ github.ref_name }}
-          files: nexusai-server-${{ github.ref_name }}.jar
+          tag_name: ${{ inputs.tag }}
+          name: NexusAI ${{ inputs.tag || github.ref_name }}
+          files: nexusai-server-${{ inputs.tag || github.ref_name }}.jar
           body: |
             ## NexusAI — 独立 Java 反应式 AI 中转网关
 
